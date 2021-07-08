@@ -1,3 +1,5 @@
+Repository for examples of Keras classifiers
+
 requires python dev for tf-models-official
 sudo apt-get install python3.8-dev
 
