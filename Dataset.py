@@ -4,14 +4,12 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
+from abc import ABC
 
 #import preprocessor as p
 #from sklearn.utils import class_weight
 
-
-
 SEED = 3
-
 
 #Abstract dataset class (except python doesn't support abstract classes)
 # don't create an instance of dataset
@@ -20,7 +18,7 @@ SEED = 3
 #  self.train_X
 #  self.train_Y -- these are set in __test_train_split
 #
-class Dataset:
+class Dataset(ABC):
     def __init__(self, seed=SEED, test_set_size=0):  # use_all_data=False,
         self.seed = seed
         self.test_set_size = test_set_size
@@ -60,7 +58,7 @@ class Dataset:
             raise Exception("Error: test data does not exist")
         return self.test_X, self.test_Y
 
-    #TODO - can tweek this however you want
+    #You can tweek this however you want
     def preprocess_data(self, data):
         # preprocess tweets to remove mentions, URL's
         p.set_options(p.OPT.MENTION, p.OPT.URL)  # P.OPT.HASHTAG, p.OPT.EMOJI
@@ -72,8 +70,35 @@ class Dataset:
 
         return data.tolist()
 
-#TODO - implement multi-label text classification dataset loader
-    
+    #TODO - this is based on Max's code and has some hardcoded values - make it more generic
+class MultiLabel_Text_Classification_Dataset(Dataset):
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, test_set_size=0):
+        Dataset.__init__(self, seed=seed, test_set_size=test_set_size)
+        # load the labels
+
+        # May want to reformat my converter to have a header line and separate each individual relationship value with a tab
+        # For example, first line = sentence\tPIP\tTeRP\tTaRP\t etc....
+        # basic line would look like this: sentence\t0\t0\t0\t0\t0\t1\t0\t1
+        # MAY NEED TO GET RID OF THIS IF STATEMENT AND ITS CODE
+        # if (text_column_name is None or label_column_name is None):
+        #     text_column_name = 'text'
+        #     label_column_name = 'label'
+        #     df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name],
+        #                      delimiter='\t').dropna()
+        # else:
+        df = pd.read_csv(data_file_path, delimiter='\t').dropna()
+
+        labels = df.loc[:, 'TrIP':'PIP'].to_numpy()# **** Needs to be a 2d list, list of lists containing 8 0's or 1's indicating relation *****
+
+        # load the data
+        # Needs to be a list of the sentences
+        data = df['Sentence'].values.tolist()
+        # data = self.preprocess_data(raw_data)
+
+        self._test_train_split(data, labels)
+        # self._determine_class_weights() #TODO - re-implement this
+
+
 #Loads data in which there is a single (categorical) label column (e.g. class 0 = 0, class 2 = 2)
 class MultiClass_Text_Classification_Dataset(Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, test_set_size=0):
@@ -164,34 +189,40 @@ class Binary_Text_Classification_Dataset(Dataset):
         #self._determine_class_weights() #TODO - re-implement this
         
 
-#TODO -- may need to expand for multi-class problems
-#TODO -- may need to expand for different format types. Right now it is for span start and span end format types
+# TODO -- This will work for multi-class problems, and I think it works for mult-label problems
+# TODO - this currently uses hard-coded values so its functionality is limited. It serves as a template though
+# TODO -- may need to expand for different format types. Right now it is for span start and span end format types
 class Token_Classification_Dataset(Dataset):
-    def __init__(self, data_file_path, text_column_name, span_start_column_name, span_end_column_name, tokenizer, seed=SEED, test_set_size=0):
+    def __init__(self, data_file_path, model_name, seed=SEED, test_set_size=0):
         Dataset.__init__(self, seed=seed, test_set_size=test_set_size)
-        self.tokenizer = tokenizer
 
         # read in data
-        df = pd.read_csv(data_file_path, delimiter='\t').dropna()
-        data = self.preprocess_data(df['text'])
-        span_start = df[start]
-        span_end = df[end]
+        df = pd.read_csv(data_file_path, delimiter='\t', names=['text', 'problem', 'treatment', 'test']).dropna()
+        df['problem'] = df.problem.apply(literal_eval)
+        df['treatment'] = df.treatment.apply(literal_eval)
+        df['test'] = df.test.apply(literal_eval)
+        data = df['text'].tolist()
 
-        #tokenize the data to generate y-values for each token
-        model_name = TODO_PASS_IN
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        tokenized = tokenizer(batch_x, padding=True, truncation=True, max_length=512, return_tensors='tf')
+        # tokenize the data to generate y-values for each token
+        # self.model_name = model_name
+        # tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        # tokenized = tokenizer(data, padding=True, truncation=True, max_length=512, return_tensors='tf')
 
+        #TODO - I think there should be a more efficient (space-wise and time wise) way to do this
+        #       Right now, it creates a num_samples * max_length * num_classes matrix. It has to be
+        #       This way because of how the data is pushed through BERT. The length of the labels
+        #       must match the length of the samples. It is a lot of wasted space though
+        #TOOD - max_length is hardcoded in
+        num_classes = 3
+        max_length = 512
+        labels = np.zeros([len(df['test']), max_length, num_classes])
+        for i in range(len(df['test'])):
+            num_words = len(df['test'][i])
+            for j in range(num_words):
+                labels[i][j][0] = df['problem'][i][j]
+                labels[i][j][1] = df['treatment'][i][j]
+                labels[i][j][2] = df['test'][i][j]
 
-        for i,t in enumerate(tokenized['input_ids']):
-            print("string = ", batch_x[i])
-            print("tokens = ", self.tokenizer.convert_ids_to_tokens(t))
-            print("attention_mask = ", tokenized['attention_mask'][i])
-        
-        labels = TODO ####NEED TO TOKENIZE THE DATA and ADD LABELS ACCORDINGLY
-
-        #TODO - need a label mapper or something. This is the tricky part, but once I get labels passed into the model I think
-        # I can go ahead and run the model I created for it
-        
         self._test_train_split(data, labels)
-        self._determine_class_weights()
+        # self._determine_class_weights()
+
