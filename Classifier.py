@@ -6,6 +6,7 @@ import tensorflow_addons as tfa
 
 
 from DataGenerator import *
+ 
 
 class Classifier:
     '''
@@ -36,8 +37,11 @@ class Classifier:
     #some default parameter values
     EPOCHS=50
     BATCH_SIZE=100
+    MAX_LENGTH = 512
     
-    def __init__(self):
+    #Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
+    #      For BERT its 512
+    def __init__(self, max_length=MAX_LENGTH):
         '''
         Initializer for a language model. This class should be extended, and
         the model should be built in the constructor. This constructor does
@@ -48,6 +52,7 @@ class Classifier:
         '''
         self.tokenizer = None
         self.model = None
+        self._max_length = max_length
         
     def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS):
         '''
@@ -74,6 +79,7 @@ class Classifier:
             epochs=epochs,
             validation_data=validation_data,
             verbose=2
+            #, callbacks = [CallBacks.WriteMetrics()]
         )
 
 
@@ -85,33 +91,10 @@ class Classifier:
         :return: predictions
         """
         if not isinstance(x, tf.keras.utils.Sequence):
-             #TODO - max length can be longer depending on the model -e.g. Roberta is 768
-            tokenized = self.tokenizer(x, padding=True, truncation=True, max_length=512, return_tensors='tf')
+            tokenized = self.tokenizer(x, padding=True, truncation=True, max_length=self._max_length, return_tensors='tf')
             x = (tokenized['input_ids'], tokenized['attention_mask'])
 
         return self.model.predict(x, batch_size=batch_size)
-
-
-# Example of how to write custom metrics. This is precision, recall, and f1 scores
-#TODO - got these from online (https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model), do they work for multi-class problems too?
-from keras import backend as K
-def recall_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    recall = true_positives / (possible_positives + K.epsilon())
-    return recall
-
-def precision_m(y_true, y_pred):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    return precision
-
-def f1_m(y_true, y_pred):
-    precision = precision_m(y_true, y_pred)
-    recall = recall_m(y_true, y_pred)
-    return 2*((precision*recall)/(precision+recall+K.epsilon()))
-
 
 
 
@@ -159,19 +142,19 @@ class Binary_Text_Classifier(Classifier):
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
         
-        #now, create some deep layers
-        #deep 1
+        #now, create some dense layers
+        #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(.2)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
         #output1 = dropout1(dense1(sentence_representation_language_model))
     
-        #deep 2
+        #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
         dropout2 = tf.keras.layers.Dropout(.2)
         output2 = dropout2(dense2(output1))
 
-        #deep 3
+        #dense 3
         dense3 = tf.keras.layers.Dense(64, activation='gelu')
         dropout3 = tf.keras.layers.Dropout(.2)
         output3 = dropout3(dense3(output2))
@@ -191,13 +174,6 @@ class Binary_Text_Classifier(Classifier):
             metrics =['accuracy', tf.keras.metrics.Precision(), precision_m, tf.keras.metrics.Recall(), recall_m, tfa.metrics.F1Score(1), f1_m] #TODO - get F1 working
             #metrics=['accuracy', tfa.metrics.F1Score(2)] #TODO -add precision and recall
         )
-
-
-
-
-
-
-
 
         
 class MultiLabel_Text_Classifier(Classifier):
@@ -255,18 +231,18 @@ class MultiLabel_Text_Classifier(Classifier):
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
         
-        #now, create some deep layers
-        #deep 1
+        #now, create some dense layers
+        #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(.2)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
     
-        #deep 2
+        #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
         dropout2 = tf.keras.layers.Dropout(.2)
         output2 = dropout2(dense2(output1))
 
-        #deep 3
+        #dense 3
         dense3 = tf.keras.layers.Dense(64, activation='gelu')
         dropout3 = tf.keras.layers.Dropout(.2)
         output3 = dropout3(dense3(output2))
@@ -329,25 +305,23 @@ class MultiLabel_Token_Classifier(Classifier):
         #create the embeddings - the 0th index is the last hidden layer
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
         
-        #now, create some deep layers
-        #deep 1
+        #now, create some dense layers
+        #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(.2)
         output1 = dropout1(dense1(embeddings))
     
-        #deep 2
+        #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
         dropout2 = tf.keras.layers.Dropout(.2)
         output2 = dropout2(dense2(output1))
 
-        #deep 3
-        dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        dropout3 = tf.keras.layers.Dropout(.2)
-        output3 = dropout3(dense3(output2))
+        #I have just 2 layers in this network to show how it can be done
+        # You just plug the output of output2 into the softmax layer
 
         #softmax
         softmax_layer = tf.keras.layers.Dense(num_classes, activation='softmax')
-        final_output = softmax_layer(output3)
+        final_output = softmax_layer(output2)
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
@@ -357,5 +331,43 @@ class MultiLabel_Token_Classifier(Classifier):
         self.model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
-            metrics=['accuracy', tfa.metrics.F1Score(num_classes, average='micro', name='micro_f1'), tfa.metrics.F1Score(num_classes, average='macro', name='macro_f1')] #TODO - what metrics to report for multilabel? macro/micro F1, etc..?
-        )
+            metrics=['accuracy'] 
+        )#TODO - what metrics to report for multilabel? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own
+
+
+
+
+
+
+# Example of how to write custom metrics. This is precision, recall, and f1 scores
+# I got these from online (https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model)
+# TODO - do they work for multi-class problems too?
+from keras import backend as K
+def recall_m(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
+
+def precision_m(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+def f1_m(y_true, y_pred):
+    precision = precision_m(y_true, y_pred)
+    recall = recall_m(y_true, y_pred)
+    return 2*((precision*recall)/(precision+recall+K.epsilon()))
+
+
+#Example of a custom loss function - it doesn't do anything correct, but its how you would write
+# a custom loss function if you wanted to
+def custom_loss_example(y_true, y_pred):
+    # y_true = K.transpose(y_true)
+    # print(y_true)
+    y_pred = K.transpose(y_pred)
+
+    # print(y_true[0][0].get_shape())
+    # print(y_pred[0][0].get_shape())
+    return K.binary_crossentropy(y_true[0][0], y_pred[0][0])
