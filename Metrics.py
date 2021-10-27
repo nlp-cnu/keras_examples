@@ -68,7 +68,7 @@ def class_precision(y_true, y_pred, axis):
     precision = true_positives / (predicted_positives + K.epsilon())
     return precision
 
-def f1_0(y_true, y_pred, axis):
+def class_f1(y_true, y_pred, axis):
     precision = class_precision(y_true, y_pred, axis)
     recall = class_recall(y_true, y_pred, axis)
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
