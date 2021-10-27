@@ -30,9 +30,18 @@ class Classifier(ABC):
     increases the speed of training.
     '''
     #These are some of the HuggingFace Models which you can use
+    #general models
     BASEBERT = 'bert-base-uncased'
+    DISTILBERT = 'distilbert-base-uncased'
+    ROBERTA = 'roberta-base'
+    GPT2 = 'gpt2'
+    ALBERT = 'albert-base-v2'
+
+    #specialty models
     ROBERTA_TWITTER = 'cardiffnlp/twitter-roberta-base'
     BIOREDDITBERT = 'cambridgeltl/BioRedditBERT-uncased'
+
+    
 
     #some default parameter values
     EPOCHS = 50
