@@ -111,9 +111,8 @@ class Binary_Text_Classifier(Classifier):
         self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
         
         #create the language model
-        model_name = self.language_model_name
-        language_model = TFAutoModel.from_pretrained(model_name)
-        language_model.trainable = language_model_trainable
+        language_model = TFAutoModel.from_pretrained(self._language_model_name)
+        language_model.trainable = self._language_model_trainable
         #language_model.output_hidden_states = False
 
         #print the GPUs that tensorflow can find, and enable memory growth.
@@ -198,9 +197,8 @@ class MultiLabel_Text_Classifier(Classifier):
         self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
         
         #create the language model
-        model_name = self.language_model_name
-        language_model = TFAutoModel.from_pretrained(model_name)
-        language_model.trainable = language_model_trainable
+        language_model = TFAutoModel.from_pretrained(self._language_model_name)
+        language_model.trainable = self._language_model_trainable
         #language_model.output_hidden_states = False
 
         #print the GPUs that tensorflow can find, and enable memory growth.
@@ -272,7 +270,7 @@ class MultiLabel_Text_Classifier(Classifier):
 
 
 class MultiClass_Text_Classifier(Classifier):
-            def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
         
         '''
         This is identical to the MultiLabel_Text_Classifier, except the last layer uses
@@ -285,9 +283,8 @@ class MultiClass_Text_Classifier(Classifier):
         self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
         
         #create the language model
-        model_name = self.language_model_name
-        language_model = TFAutoModel.from_pretrained(model_name)
-        language_model.trainable = language_model_trainable
+        language_model = TFAutoModel.from_pretrained(self._language_model_name)
+        language_model.trainable = self._language_model_trainable
 
         #create the model
         #create the input layer, it contains the input ids (from tokenizer) and the
@@ -340,12 +337,11 @@ class MultiLabel_Token_Classifier(Classifier):
         self._num_classes = num_classes
         
         #create the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(self._language_model_name)
         
         #create the language model
-        model_name = self.language_model_name
-        language_model = TFAutoModel.from_pretrained(model_name)
-        language_model.trainable = language_model_trainable
+        language_model = TFAutoModel.from_pretrained(self._language_model_name)
+        language_model.trainable = self._language_model_trainable
         #language_model.output_hidden_states = False
 
         #print the GPUs that tensorflow can find, and enable memory growth.
