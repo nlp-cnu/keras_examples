@@ -6,9 +6,9 @@ import tensorflow_addons as tfa
 
 
 from DataGenerator import *
- 
+from abc import ABC, abstractmethod
 
-class Classifier:
+class Classifier(ABC):
     '''
     Classifier class, which holds a language model and a classifier
     This class can be modified to create whatever architecture you want,
@@ -35,13 +35,15 @@ class Classifier:
     BIOREDDITBERT = 'cambridgeltl/BioRedditBERT-uncased'
 
     #some default parameter values
-    EPOCHS=50
-    BATCH_SIZE=100
+    EPOCHS = 50
+    BATCH_SIZE = 20
     MAX_LENGTH = 512
-    
     #Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
     #      For BERT its 512
-    def __init__(self, max_length=MAX_LENGTH):
+    LEARNING_RATE = 0.01
+    
+    @abstractmethod
+    def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
         '''
         Initializer for a language model. This class should be extended, and
         the model should be built in the constructor. This constructor does
@@ -52,7 +54,10 @@ class Classifier:
         '''
         self.tokenizer = None
         self.model = None
+        self._language_model_name = language_model_name
+        self._language_model_trainable = language_model_trainable
         self._max_length = max_length
+        self._learning_rate=learning_rate
         
     def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS):
         '''
@@ -97,12 +102,11 @@ class Classifier:
         return self.model.predict(x, batch_size=batch_size)
 
 
-
 class Binary_Text_Classifier(Classifier):
-    def __init__(self, language_model_name, language_model_trainable=False):
-        Classifier.__init__(self)
-        self.language_model_name = language_model_name
-
+    
+    def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        
         #create the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
         
@@ -160,14 +164,14 @@ class Binary_Text_Classifier(Classifier):
         output3 = dropout3(dense3(output2))
 
         #softmax
-        softmax_layer = tf.keras.layers.Dense(1, activation='sigmoid')
-        final_output = softmax_layer(output3)
+        sigmoid_layer = tf.keras.layers.Dense(1, activation='sigmoid')
+        final_output = sigmoid_layer(output3)
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
     
         #compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=0.01)
+        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
@@ -177,7 +181,9 @@ class Binary_Text_Classifier(Classifier):
 
         
 class MultiLabel_Text_Classifier(Classifier):
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False):
+
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+        
         '''
         This is identical to the Binary_Text_Classifier, except the last layer uses
         a softmax, loss is Categorical Cross Entropy and its output dimension is num_classes
@@ -185,10 +191,9 @@ class MultiLabel_Text_Classifier(Classifier):
         You also need to make sure that the class input is the correct dimensionality by
         using Dataset TODO --- need to write a new class?
         '''
-        Classifier.__init__(self)
-        self.language_model_name = language_model_name
-        self.num_classes = num_classes
-        
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        self._num_classes = num_classes
+    
         #create the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
         
@@ -248,37 +253,91 @@ class MultiLabel_Text_Classifier(Classifier):
         output3 = dropout3(dense3(output2))
 
         #softmax
-        softmax_layer = tf.keras.layers.Dense(num_classes, activation='softmax')
-        final_output = softmax_layer(output3)
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(output3)
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-    
+
+        #fina_output = softmax_layer(output3)
+        #TODO - loss='categorical_crossentropy'
+        
         #compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=0.01)
+        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
         self.model.compile(
             optimizer=optimizer,
-            loss='categorical_crossentropy',
-            metrics=['accuracy',tfa.metrics.F1Score(num_classes, average='micro', name='micro_f1'), tfa.metrics.F1Score(num_classes, average='macro', name='macro_f1')] #TODO - what metrics to report for multilabel? macro/micro F1, etc..?
+            loss='binary_crossentropy',
+            metrics=['accuracy',tfa.metrics.F1Score(self._num_classes, average='micro', name='micro_f1'), tfa.metrics.F1Score(self._num_classes, average='macro', name='macro_f1')] #TODO - what metrics to report for multilabel? macro/micro F1, etc..?
         )
 
 
+class MultiClass_Text_Classifier(Classifier):
+            def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+        
+        '''
+        This is identical to the MultiLabel_Text_Classifier, except the last layer uses
+        a softmax, loss is Categorical Cross Entropy
+        '''
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        self._num_classes = num_classes
+    
+        #create the tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
+        
+        #create the language model
+        model_name = self.language_model_name
+        language_model = TFAutoModel.from_pretrained(model_name)
+        language_model.trainable = language_model_trainable
 
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
 
+        #create the embeddings - the 0th index is the last hidden layer
+        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
+        
+        #In this example, we use a biLSTM to generate a sentence representation. We could use
+        # the langugae model directly (see multi-label text classifier)
+        lstm_size=128
+        biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
+        sentence_representation_biLSTM = biLSTM_layer(embeddings)
+        
+        #now, create a dense layers
+        #dense 1
+        dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(.2)
+        output1 = dropout1(dense1(sentence_representation_biLSTM))
+
+        #softmax
+        softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
+        final_output = softmax_layer(output1)
+    
+        #combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+
+        #compile the model
+        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        self.model.compile(
+            optimizer=optimizer,
+            loss='categorical_crossentropy',
+            metrics=['accuracy',tfa.metrics.F1Score(self._num_classes, average='micro', name='micro_f1'), tfa.metrics.F1Score(self._num_classes, average='macro', name='macro_f1')] #TODO - what metrics to report for multilabel? macro/micro F1, etc..?
+        )
 
 
 
         
 class MultiLabel_Token_Classifier(Classifier):
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False):
+    
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
         '''
         This is nearly identical to the multilabel text classifier, except there is no conversion
         to a sentence embedding. Instead, there is a label for each term in the input, so the labels
         have an extra dimension. Really then, the ONLY difference is that no slice/BiLSTM step occurs
         '''
-        Classifier.__init__(self)
-        self.language_model_name = language_model_name
-        self.num_classes = num_classes
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        self._num_classes = num_classes
         
         #create the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
@@ -320,14 +379,80 @@ class MultiLabel_Token_Classifier(Classifier):
         # You just plug the output of output2 into the softmax layer
 
         #softmax
-        softmax_layer = tf.keras.layers.Dense(num_classes, activation='softmax')
+        simgoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(output2)
+    
+        #combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+    
+        #compile the model
+        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        self.model.compile(
+            optimizer=optimizer,
+            loss='binary_crossentropy',
+            metrics=['accuracy'] 
+        )#TODO - what metrics to report for multilabel? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own
+
+
+
+class MultiClass_Token_Classifier(Classifier):
+    
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+        '''
+        This is identical to the multi-label token classifier, 
+        except the last layer is a softmax, and the loss function is categorical cross entropy
+        '''
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        self._num_classes = num_classes
+        
+        #create the tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
+        
+        #create the language model
+        model_name = self.language_model_name
+        language_model = TFAutoModel.from_pretrained(model_name)
+        language_model.trainable = language_model_trainable
+        #language_model.output_hidden_states = False
+
+        #print the GPUs that tensorflow can find, and enable memory growth.
+        # memory growth is something that CJ had to do, but doesn't work for me
+        # set memory growth prevents tensor flow from just grabbing all available VRAM
+        #physical_devices = tf.config.list_physical_devices('GPU')
+        #print (physical_devices)
+        #tf.config.experimental.set_memory_growth(physical_devices[0], True)
+        
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
+
+        #create the embeddings - the 0th index is the last hidden layer
+        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
+        
+        #now, create some dense layers
+        #dense 1
+        dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(.2)
+        output1 = dropout1(dense1(embeddings))
+    
+        #dense 2
+        dense2 = tf.keras.layers.Dense(128, activation='gelu')
+        dropout2 = tf.keras.layers.Dropout(.2)
+        output2 = dropout2(dense2(output1))
+
+        #I have just 2 layers in this network to show how it can be done
+        # You just plug the output of output2 into the softmax layer
+
+        #softmax
+        softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
         final_output = softmax_layer(output2)
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
     
         #compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=0.01)
+        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
         self.model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',

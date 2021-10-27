@@ -27,8 +27,8 @@ from Dataset import *
 #This is the main running method for the script
 if __name__ == '__main__':
     #hard-coded variables
-    language_model_name = Classifier.ROBERTA_TWITTER
-    data_filepath = '../text_classification_dataset.tsv'
+    language_model_name = Classifier.BASEBERT
+    data_filepath = '../data/ade_tweets/text_classification_dataset.tsv'
     seed = 2005
 
     #create classifier and load data for a binary text classifier
