@@ -104,7 +104,7 @@ class Classifier(ABC):
 
 class Binary_Text_Classifier(Classifier):
     
-    def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+    def __init__(self, language_model_name, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
         Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
         
         #create the tokenizer
@@ -182,7 +182,7 @@ class Binary_Text_Classifier(Classifier):
         
 class MultiLabel_Text_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
         
         '''
         This is identical to the Binary_Text_Classifier, except the last layer uses
@@ -272,7 +272,7 @@ class MultiLabel_Text_Classifier(Classifier):
 
 
 class MultiClass_Text_Classifier(Classifier):
-            def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+            def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
         
         '''
         This is identical to the MultiLabel_Text_Classifier, except the last layer uses
@@ -330,7 +330,7 @@ class MultiClass_Text_Classifier(Classifier):
         
 class MultiLabel_Token_Classifier(Classifier):
     
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
         '''
         This is nearly identical to the multilabel text classifier, except there is no conversion
         to a sentence embedding. Instead, there is a label for each term in the input, so the labels
@@ -397,7 +397,7 @@ class MultiLabel_Token_Classifier(Classifier):
 
 class MultiClass_Token_Classifier(Classifier):
     
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
         '''
         This is identical to the multi-label token classifier, 
         except the last layer is a softmax, and the loss function is categorical cross entropy
