@@ -40,35 +40,34 @@ def f1_0(y_true, y_pred):
     return class_f1(y_true, y_pred, 0)
 
 def f1_1(y_true, y_pred):
-    return class_f1(y_true, y_pred, 0)
+    return class_f1(y_true, y_pred, 1)
 
 def f1_2(y_true, y_pred):
-    return class_f1(y_true, y_pred, 0)
+    return class_f1(y_true, y_pred, 2)
 
 def f1_3(y_true, y_pred):
-    return class_f1(y_true, y_pred, 0)
+    return class_f1(y_true, y_pred, 3)
 
 def f1_4(y_true, y_pred):
-    return class_f1(y_true, y_pred, 0)
-
+    return class_f1(y_true, y_pred, 4)
 
 
 # Example of how to write custom metrics.
 # I got the base of these from online (https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model)
 # TODO - do they work for multi-class problems too?
-def class_recall(y_true, y_pred, axis):    
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)), axis=axis)
-    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)), axis=axis)
-    recall = true_positives / possible_positives + K.epsilon()
+def class_recall(y_true, y_pred, class_num):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1))[:][class_num])
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1))[:][class_num])
+    recall = true_positives / (possible_positives + K.epsilon())
     return recall
 
-def class_precision(y_true, y_pred, axis):
-    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)), axis=axis)
-    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)), axis=axis)
+def class_precision(y_true, y_pred, class_num):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1))[:][class_num])
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1))[:][class_num])
     precision = true_positives / (predicted_positives + K.epsilon())
     return precision
 
-def class_f1(y_true, y_pred, axis):
-    precision = class_precision(y_true, y_pred, axis)
-    recall = class_recall(y_true, y_pred, axis)
+def class_f1(y_true, y_pred, class_num):
+    precision = class_precision(y_true, y_pred, class_num)
+    recall = class_recall(y_true, y_pred, class_num)
     return 2*((precision*recall)/(precision+recall+K.epsilon()))
