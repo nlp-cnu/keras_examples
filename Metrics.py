@@ -183,3 +183,21 @@ def test(y_true, y_pred):
     tf.print("\n")
 
     return 1
+
+
+#Note: These custom methods have been fully tested for text classification tasks
+#      The results are correct. They conflict with the built in methods below:
+#      Do not use the build in methods, use your own and verify they work by
+#      actually looking at output and calculating scores
+# tfa.metrics.F1Score(self._num_classes, average='micro', name='micro_f1'),
+# tfa.metrics.F1Score(self._num_classes, average='macro', name='macro_f1'),
+# tf.keras.metrics.Precision(class_id=0),
+# tf.keras.metrics.Recall(class_id=0),
+# tf.keras.metrics.Precision(class_id=1),
+# tf.keras.metrics.Recall(class_id=1),
+# tf.keras.metrics.Precision(class_id=2),
+# tf.keras.metrics.Recall(class_id=2),
+# tf.keras.metrics.Precision(class_id=3),
+# tf.keras.metrics.Recall(class_id=3),
+# tf.keras.metrics.Precision(class_id=4),
+# tf.keras.metrics.Recall(class_id=4),
