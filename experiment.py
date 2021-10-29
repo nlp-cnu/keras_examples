@@ -38,10 +38,11 @@ if __name__ == '__main__':
     #create classifier and load data for a multiclass text classifier
     num_classes = 2
     classifier = MultiLabel_Text_Classifier(language_model_name, num_classes)
-    data = MultiClass_Text_Classification_Dataset(data_filepath)
+    data = MultiClass_Text_Classification_Dataset(data_filepath, validation_set_size=0.2)
     
     #get the training data
     train_x, train_y = data.get_train_data()
+    val_x, val_y = data.get_validation_data()
 
     ###### BONUS STUFF ########
     #summarize the model in text
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     )
     
     #train the model
-    classifier.train(train_x,train_y)
+    classifier.train(train_x,train_y,validation_data=(val_x, val_y))
 
     #predict with the model
     predictions = classifier.test(test_x)

@@ -6,7 +6,7 @@ import tensorflow_addons as tfa
 
 
 from DataGenerator import *
-from CustomCallback import *
+from CustomCallbacks import *
 from abc import ABC, abstractmethod
 
 class Classifier(ABC):
@@ -41,8 +41,6 @@ class Classifier(ABC):
     #specialty models
     ROBERTA_TWITTER = 'cardiffnlp/twitter-roberta-base'
     BIOREDDITBERT = 'cambridgeltl/BioRedditBERT-uncased'
-
-    
 
     #some default parameter values
     EPOCHS = 50
@@ -80,6 +78,8 @@ class Classifier(ABC):
         :param batch_size: the batch size
         :param: validation_data: a tuple containing x and y for a validation dataset
                 so, validation_data[0] = val_x and validation_data[1] = val_y
+                If validation data is passed in, then all metrics (including loss) will 
+                report performance on the validation data
         :param: epochs: the number of epochs to train for
         '''
         
@@ -88,7 +88,7 @@ class Classifier(ABC):
         
         #generate the validation data (if it exists)
         if validation_data is not None:
-            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, tokenizer)
+            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self.tokenizer)
 
         #fit the model to the training data
         self.model.fit(
