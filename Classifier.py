@@ -6,6 +6,7 @@ import tensorflow_addons as tfa
 
 
 from DataGenerator import *
+from CustomCallback import *
 from abc import ABC, abstractmethod
 
 class Classifier(ABC):
@@ -94,7 +95,8 @@ class Classifier(ABC):
             training_data,
             epochs=epochs,
             validation_data=validation_data,
-            verbose=2
+            verbose=2,
+            callbacks = [SaveModelCallback(self, 'model_out_file_name')]
             #, callbacks = [CallBacks.WriteMetrics()]
         )
 
@@ -111,6 +113,24 @@ class Classifier(ABC):
             x = (tokenized['input_ids'], tokenized['attention_mask'])
 
         return self.model.predict(x, batch_size=batch_size)
+
+
+    #function to save the model weights
+    def save(self, filepath):
+        """
+        Saves the model weights
+        :return: None
+        """
+        self.model.save_weights(filepath)
+
+    #function to load the model weights
+    def load(self, filepath):
+        """
+        Loads weights for the model
+        :param filepath: the filepath (without extension) of the model #TODO - is that the file_path?
+        :return:
+        """
+        self.model.load_weights(filepath)
 
 
 class Binary_Text_Classifier(Classifier):
@@ -479,3 +499,10 @@ def custom_loss_example(y_true, y_pred):
     # print(y_true[0][0].get_shape())
     # print(y_pred[0][0].get_shape())
     return K.binary_crossentropy(y_true[0][0], y_pred[0][0])
+
+
+#TOOD - need to add functionality to save the network, but to save the network I think it needs to be a fixed size. I think that means I need to create change how the network is created -- e.g. detect the input size, then create the network with that fixed input size
+#TODO - add a method that loads a network
+
+
+
