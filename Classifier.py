@@ -50,9 +50,10 @@ class Classifier(ABC):
     #Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
     #      For BERT its 512
     LEARNING_RATE = 0.01
+    DROPOUT_RATE = 0.8
     
     @abstractmethod
-    def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE):
+    def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
         '''
         Initializer for a language model. This class should be extended, and
         the model should be built in the constructor. This constructor does
@@ -67,6 +68,7 @@ class Classifier(ABC):
         self._language_model_trainable = language_model_trainable
         self._max_length = max_length
         self._learning_rate=learning_rate
+        self._dropout_rate=dropout_rate
         
     def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS):
         '''
@@ -113,8 +115,8 @@ class Classifier(ABC):
 
 class Binary_Text_Classifier(Classifier):
     
-    def __init__(self, language_model_name, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+    def __init__(self, language_model_name, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
         
         #create the tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
@@ -157,18 +159,18 @@ class Binary_Text_Classifier(Classifier):
         #now, create some dense layers
         #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(.2)
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
         #output1 = dropout1(dense1(sentence_representation_language_model))
     
         #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(.2)
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
         output2 = dropout2(dense2(output1))
 
         #dense 3
         dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        dropout3 = tf.keras.layers.Dropout(.2)
+        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
         output3 = dropout3(dense3(output2))
 
         #softmax
@@ -190,7 +192,7 @@ class Binary_Text_Classifier(Classifier):
         
 class MultiLabel_Text_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
         '''
         This is identical to the Binary_Text_Classifier, except the last layer uses
@@ -199,7 +201,7 @@ class MultiLabel_Text_Classifier(Classifier):
         You also need to make sure that the class input is the correct dimensionality by
         using Dataset TODO --- need to write a new class?
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
         self._num_classes = num_classes
     
         #create the tokenizer
@@ -246,17 +248,17 @@ class MultiLabel_Text_Classifier(Classifier):
         #now, create some dense layers
         #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(.2)
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
     
         #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(.2)
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
         output2 = dropout2(dense2(output1))
 
         #dense 3
         dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        dropout3 = tf.keras.layers.Dropout(.2)
+        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
         output3 = dropout3(dense3(output2))
 
         #softmax
@@ -279,13 +281,13 @@ class MultiLabel_Text_Classifier(Classifier):
 
 
 class MultiClass_Text_Classifier(Classifier):
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
         '''
         This is identical to the MultiLabel_Text_Classifier, except the last layer uses
         a softmax, loss is Categorical Cross Entropy
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
         self._num_classes = num_classes
     
         #create the tokenizer
@@ -313,7 +315,7 @@ class MultiClass_Text_Classifier(Classifier):
         #now, create a dense layers
         #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(.2)
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
 
         #softmax
@@ -336,13 +338,13 @@ class MultiClass_Text_Classifier(Classifier):
         
 class MultiLabel_Token_Classifier(Classifier):
     
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This is nearly identical to the multilabel text classifier, except there is no conversion
         to a sentence embedding. Instead, there is a label for each term in the input, so the labels
         have an extra dimension. Really then, the ONLY difference is that no slice/BiLSTM step occurs
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
         self._num_classes = num_classes
         
         #create the tokenizer
@@ -372,12 +374,12 @@ class MultiLabel_Token_Classifier(Classifier):
         #now, create some dense layers
         #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(.2)
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(embeddings))
     
         #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(.2)
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
         output2 = dropout2(dense2(output1))
 
         #I have just 2 layers in this network to show how it can be done
@@ -402,12 +404,12 @@ class MultiLabel_Token_Classifier(Classifier):
 
 class MultiClass_Token_Classifier(Classifier):
     
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This is identical to the multi-label token classifier, 
         except the last layer is a softmax, and the loss function is categorical cross entropy
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
         self._num_classes = num_classes
         
         #create the tokenizer
@@ -438,12 +440,12 @@ class MultiClass_Token_Classifier(Classifier):
         #now, create some dense layers
         #dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(.2)
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(embeddings))
     
         #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(.2)
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
         output2 = dropout2(dense2(output1))
 
         #I have just 2 layers in this network to show how it can be done
