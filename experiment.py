@@ -6,7 +6,7 @@ from Dataset import *
 if __name__ == '__main__':
 
     #batch and epoch variables
-    max_epoch = 100
+    max_epoch = 1000
     batch_size = 200
 
     #model hyperparameters
@@ -58,7 +58,8 @@ if __name__ == '__main__':
     #train the model
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
-                     model_out_file_name=model_out_file_name)
+                     model_out_file_name=model_out_file_name,
+                     epochs=max_epoch)
 
     #predict with the model
     #predictions = classifier.test(test_x)
