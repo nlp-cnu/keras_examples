@@ -7,6 +7,7 @@ import tensorflow_addons as tfa
 
 from DataGenerator import *
 from CustomCallbacks import *
+from Metrics import *
 from abc import ABC, abstractmethod
 
 class Classifier(ABC):
@@ -296,8 +297,17 @@ class MultiLabel_Text_Classifier(Classifier):
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
-            metrics=['accuracy',tfa.metrics.F1Score(self._num_classes, average='micro', name='micro_f1'), tfa.metrics.F1Score(self._num_classes, average='macro', name='macro_f1')] #TODO - what metrics to report for multilabel? macro/micro F1, etc..?
+            metrics=[macro_cPrecision, macro_cRecall, macro_cF1,
+                     micro_cPrecision, micro_cRecall, micro_cF1,
+                     recall_c0, precision_c0, f1_c0,
+                     recall_c1, precision_c1, f1_c1,
+                     recall_c2, precision_c2, f1_c2,
+                     recall_c3, precision_c3, f1_c3,
+                     recall_c4, precision_c4, f1_c4
+             ]
         )
+
+        
 
 
 class MultiClass_Text_Classifier(Classifier):
