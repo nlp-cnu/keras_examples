@@ -17,6 +17,7 @@ class Dataset(ABC):
     
     @abstractmethod
     def __init__(self, seed=SEED, validation_set_size=0):  # use_all_data=False,
+        #validation_set_size is the percentage to use for validation set (e.g. 0.2 = 20%
         self.seed = seed
         self._val_set_size = validation_set_size
         self._train_X = None
@@ -46,7 +47,7 @@ class Dataset(ABC):
 
     def get_validation_data(self):
         if self._val_X is None or self._val_Y is None:
-            raise Exception("Error: train data does not exist, you must call _training_validation_split after loading data")
+            raise Exception("Error: val data does not exist, you must specify a validation split percent")
         return self._val_X, self._val_Y
 
     #You can tweek this however you want
@@ -235,8 +236,8 @@ class Token_Classification_Dataset(Dataset):
 
 
 class My_Personality_Dataset(Dataset):
-    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, test_set_size=0):
-        Dataset.__init__(self, seed=seed, test_set_size=test_set_size)
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
+        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
         # load the data
         df = pd.read_csv(data_file_path, delimiter=',')#.dropna()
@@ -253,13 +254,13 @@ class My_Personality_Dataset(Dataset):
         #preprocess the data - currently not doing any preprocessing
         #data = self.preprocess_data(raw_data)
 
-        self._test_train_split(data, labels)
+        self._training_validation_split(data, labels)
         # self._determine_class_weights()
 
 
 class Essays_Dataset(Dataset):
-    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, test_set_size=0):
-        Dataset.__init__(self, seed=seed, test_set_size=test_set_size)
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
+        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
         # load the data
         df = pd.read_csv(data_file_path, delimiter=',')#.dropna()
@@ -276,5 +277,5 @@ class Essays_Dataset(Dataset):
         #preprocess the data - currently not doing any preprocessing
         #data = self.preprocess_data(raw_data)
 
-        self._test_train_split(data, labels)
+        self._training_validation_split(data, labels)
         # self._determine_class_weights()

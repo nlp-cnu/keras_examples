@@ -50,6 +50,7 @@ class Classifier(ABC):
     #      For BERT its 512
     LEARNING_RATE = 0.01
     DROPOUT_RATE = 0.8
+    MODEL_OUT_FILE_NAME = ''
     
     @abstractmethod
     def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
@@ -68,8 +69,9 @@ class Classifier(ABC):
         self._max_length = max_length
         self._learning_rate=learning_rate
         self._dropout_rate=dropout_rate
+        self.tokenizer = AutoTokenizer.from_pretrained(self._language_model_name)
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME):
         '''
         Trains the classifier
         :param x: the training data
@@ -90,14 +92,19 @@ class Classifier(ABC):
         if validation_data is not None:
             validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self.tokenizer)
 
+        #set up callbacks
+        callbacks = []
+        if not model_out_file_name == '':
+            callbacks.append(SaveModelCallback(self, model_out_file_name))
+
+            
         #fit the model to the training data
         self.model.fit(
             training_data,
             epochs=epochs,
             validation_data=validation_data,
             verbose=2,
-            callbacks = [SaveModelCallback(self, 'model_out_file_name')]
-            #, callbacks = [CallBacks.WriteMetrics()]
+            callbacks = callbacks
         )
 
 
@@ -136,11 +143,7 @@ class Classifier(ABC):
 class Binary_Text_Classifier(Classifier):
     
     def __init__(self, language_model_name, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
-        
-        #create the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
-        
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         #create the language model
         language_model = TFAutoModel.from_pretrained(self._language_model_name)
         language_model.trainable = self._language_model_trainable
@@ -221,12 +224,9 @@ class MultiLabel_Text_Classifier(Classifier):
         You also need to make sure that the class input is the correct dimensionality by
         using Dataset TODO --- need to write a new class?
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
     
-        #create the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
-        
         #create the language model
         language_model = TFAutoModel.from_pretrained(self._language_model_name)
         language_model.trainable = self._language_model_trainable
@@ -307,12 +307,9 @@ class MultiClass_Text_Classifier(Classifier):
         This is identical to the MultiLabel_Text_Classifier, except the last layer uses
         a softmax, loss is Categorical Cross Entropy
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
     
-        #create the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
-        
         #create the language model
         language_model = TFAutoModel.from_pretrained(self._language_model_name)
         language_model.trainable = self._language_model_trainable
@@ -364,11 +361,8 @@ class MultiLabel_Token_Classifier(Classifier):
         to a sentence embedding. Instead, there is a label for each term in the input, so the labels
         have an extra dimension. Really then, the ONLY difference is that no slice/BiLSTM step occurs
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
-        
-        #create the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self._language_model_name)
         
         #create the language model
         language_model = TFAutoModel.from_pretrained(self._language_model_name)
@@ -429,11 +423,8 @@ class MultiClass_Token_Classifier(Classifier):
         This is identical to the multi-label token classifier, 
         except the last layer is a softmax, and the loss function is categorical cross entropy
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable, max_length, learning_rate, dropout_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
-        
-        #create the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name)
         
         #create the language model
         model_name = self.language_model_name
@@ -499,10 +490,6 @@ def custom_loss_example(y_true, y_pred):
     # print(y_true[0][0].get_shape())
     # print(y_pred[0][0].get_shape())
     return K.binary_crossentropy(y_true[0][0], y_pred[0][0])
-
-
-#TOOD - need to add functionality to save the network, but to save the network I think it needs to be a fixed size. I think that means I need to create change how the network is created -- e.g. detect the input size, then create the network with that fixed input size
-#TODO - add a method that loads a network
 
 
 
