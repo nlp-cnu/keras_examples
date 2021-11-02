@@ -231,3 +231,50 @@ class Token_Classification_Dataset(Dataset):
         self._training_validation_split(data, labels)
         # self._determine_class_weights()
 
+
+
+
+class My_Personality_Dataset(Dataset):
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, test_set_size=0):
+        Dataset.__init__(self, seed=seed, test_set_size=test_set_size)
+        
+        # load the data
+        df = pd.read_csv(data_file_path, delimiter=',')#.dropna()
+        #df.columns of interest are:
+        #  STATUS = the text
+        #  cEXT, cNEU, cAGR, cCON, cOPN for categorical (yes/no) for each of the traits
+        #get the data
+        data = df['STATUS'].values.tolist()
+
+        #get the labels, which are y/n values. So, convert them to 1/0 values
+        ynlabels = np.array(df.loc[:, 'cEXT':'cOPN'])
+        labels = ynlabels == 'y'
+        
+        #preprocess the data - currently not doing any preprocessing
+        #data = self.preprocess_data(raw_data)
+
+        self._test_train_split(data, labels)
+        # self._determine_class_weights()
+
+
+class Essays_Dataset(Dataset):
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, test_set_size=0):
+        Dataset.__init__(self, seed=seed, test_set_size=test_set_size)
+        
+        # load the data
+        df = pd.read_csv(data_file_path, delimiter=',')#.dropna()
+        #df.columns of interest are:
+        #  TEXT = the text
+        #  cEXT, cNEU, cAGR, cCON, cOPN for categorical (yes/no) for each of the traits
+        #get the data
+        data = df['TEXT'].values.tolist()
+
+        #get the labels, which are y/n values. So, convert them to 1/0 values
+        ynlabels = np.array(df.loc[:, 'cEXT':'cOPN'])
+        labels = ynlabels == 'y'
+        
+        #preprocess the data - currently not doing any preprocessing
+        #data = self.preprocess_data(raw_data)
+
+        self._test_train_split(data, labels)
+        # self._determine_class_weights()
