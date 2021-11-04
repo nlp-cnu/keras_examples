@@ -7,15 +7,15 @@ if __name__ == '__main__':
 
     #batch and epoch variables
     max_epoch = 1000
-    batch_size = 200
+    batch_size = 20
 
     #model hyperparameters
     learning_rate = 0.01
     dropout_rate = 0.8
-    language_model_trainable = False
+    language_model_trainable = True
 
     #other parameters
-    model_out_file_name = "models/model_out_trainable_false"
+    model_out_file_name = "models/model_out_trainable_true"
     seed = 2005
     
     #set up the language model

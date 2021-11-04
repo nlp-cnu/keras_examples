@@ -1,6 +1,6 @@
 from tensorflow.keras.callbacks import Callback, EarlyStopping
 
-class SaveModelCallback(Callback):
+class SaveModelWeightsCallback(Callback):
     "Saves the Model after each iteration of training"
     def __init__(self, classifier, weight_filename):
         Callback.__init__(self)
@@ -8,7 +8,7 @@ class SaveModelCallback(Callback):
         self._weight_filename = weight_filename
     
     def on_epoch_end(self, epoch, logs=None):
-        self._classifier.save(self._weight_filename)
+        self._classifier.save_weights(self._weight_filename)
 
 
         

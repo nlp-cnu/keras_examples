@@ -96,7 +96,7 @@ class Classifier(ABC):
         #set up callbacks
         callbacks = []
         if not model_out_file_name == '':
-            callbacks.append(SaveModelCallback(self, model_out_file_name))
+            callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
 
             
         #fit the model to the training data
@@ -124,7 +124,7 @@ class Classifier(ABC):
 
 
     #function to save the model weights
-    def save(self, filepath):
+    def save_weights(self, filepath):
         """
         Saves the model weights
         :return: None
@@ -132,7 +132,7 @@ class Classifier(ABC):
         self.model.save_weights(filepath)
 
     #function to load the model weights
-    def load(self, filepath):
+    def load_weights(self, filepath):
         """
         Loads weights for the model
         :param filepath: the filepath (without extension) of the model #TODO - is that the file_path?
