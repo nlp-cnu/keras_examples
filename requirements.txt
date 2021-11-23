@@ -5,3 +5,5 @@ transformers
 tensorflow_addons
 pydot
 scikit-learn
+onnx==1.8.1
+pytorch2keras

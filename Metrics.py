@@ -2,7 +2,7 @@
 Examples of custom metrics
 '''
 
-from keras import backend as K
+from tensorflow.keras import backend as K
 import tensorflow as tf
 
 ### Right now, I hardcode each of the metrics per class number

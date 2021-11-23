@@ -12,18 +12,19 @@ if __name__ == '__main__':
     #model hyperparameters
     learning_rate = 0.01
     dropout_rate = 0.8
-    language_model_trainable = True
+    language_model_trainable = False
 
     #other parameters
-    model_out_file_name = "models/model_out_trainable_true"
+    #model_in_file_name = "models/model_out_trainable_true" # to load a model, need to uncomment some code below
+    #model_out_file_name = "models/model_out_trainable_true_then_finetune" # to save a model, need to uncomment some code below
     seed = 2005
     
     #set up the language model
-    language_model_name = Classifier.ROBERTA
-    max_length=768
-    #language_model_name = Classifier.BASEBERT
-    #max_length=512
-
+    language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
+    max_length = 512
+    #language_model_name = Classifier.ROBERTA
+    #max_length=768
+    
     #load the dataset
     data_filepath = '../data/interview_eval/essays.csv'
     num_classes = 5
@@ -35,6 +36,9 @@ if __name__ == '__main__':
                                             learning_rate=learning_rate,
                                             language_model_trainable=language_model_trainable,
                                             dropout_rate=dropout_rate)
+
+    #If you want to load a model's weights from file, use this code
+    #classifier.load_weights(model_in_file_name)
     
     #get the training data
     train_x, train_y = data.get_train_data()
@@ -56,9 +60,13 @@ if __name__ == '__main__':
     )
     
     #train the model
+    # If you want to save model weights, use below.
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 model_out_file_name=model_out_file_name,
+    #                 epochs=max_epoch)
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
-                     model_out_file_name=model_out_file_name,
                      epochs=max_epoch)
 
     #predict with the model

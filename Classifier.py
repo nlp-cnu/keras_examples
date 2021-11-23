@@ -1,8 +1,9 @@
-from transformers import AutoTokenizer, TFAutoModel
+from transformers import AutoTokenizer, TFAutoModel, TFBertModel
 import tensorflow as tf
 from tensorflow.keras.layers import *
 from tensorflow.keras import Model
 import tensorflow_addons as tfa
+import os
 
 
 from DataGenerator import *
@@ -39,10 +40,22 @@ class Classifier(ABC):
     GPT2 = 'gpt2'
     ALBERT = 'albert-base-v2'
 
-    #specialty models
+    # social media models
     ROBERTA_TWITTER = 'cardiffnlp/twitter-roberta-base'
-    BIOREDDITBERT = 'cambridgeltl/BioRedditBERT-uncased'
+    BIOREDDIT_BERT = 'cambridgeltl/BioRedditBERT-uncased'
 
+    # biomedical and clinical models
+    # these all are written in pytorch so had to be converted
+    # see models directory for the models, and converting_pytorch_to_keras.txt
+    # for an explanation of where they came from and how they were converted
+    BIO_BERT = './models/biobert_v1.1_pubmed'
+    BLUE_BERT_PUBMED = './models/NCBI_BERT_pubmed_uncased_L-12_H-768_A-12'
+    BLUE_BERT_PUBMED_MIMIC = './models/NCBI_BERT_pubmed_mimic_uncased_L-12_H-768_A-12'
+    CLINICAL_BERT = './models/bert_pretrain_output_all_notes_150000'
+    DISCHARGE_SUMMARY_BERT = './models/bert_pretrain_output_disch_100000'
+    BIOCLINICAL_BERT = './models/biobert_pretrain_output_all_notes_150000'
+    BIODISCHARGE_SUMMARY_BERT = './models/biobert_pretrain_output_disch_100000'
+    
     #some default parameter values
     EPOCHS = 50
     BATCH_SIZE = 20
@@ -71,6 +84,22 @@ class Classifier(ABC):
         self._learning_rate=learning_rate
         self._dropout_rate=dropout_rate
         self.tokenizer = AutoTokenizer.from_pretrained(self._language_model_name)
+
+    def load_language_model(self):
+        # either load the language model locally or grab it from huggingface
+        if os.path.isdir(self._language_model_name):
+             language_model = TFBertModel.from_pretrained(self._language_model_name, from_pt=True)
+        # else the language model can be grabbed directly from huggingface
+        else:
+            language_model = TFAutoModel.from_pretrained(self._language_model_name)
+
+        # set properties
+        language_model.trainable = self._language_model_trainable
+        language_model.output_hidden_states = False
+
+        #return the loaded model
+        return language_model
+
         
     def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME):
         '''
@@ -146,9 +175,7 @@ class Binary_Text_Classifier(Classifier):
     def __init__(self, language_model_name, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         #create the language model
-        language_model = TFAutoModel.from_pretrained(self._language_model_name)
-        language_model.trainable = self._language_model_trainable
-        #language_model.output_hidden_states = False
+        language_model = self.load_language_model()
 
         #print the GPUs that tensorflow can find, and enable memory growth.
         # memory growth is something that CJ had to do, but doesn't work for me
@@ -226,13 +253,9 @@ class MultiLabel_Text_Classifier(Classifier):
         using Dataset TODO --- need to write a new class?
         '''
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        # set instance attributes
         self._num_classes = num_classes
-    
-        #create the language model
-        language_model = TFAutoModel.from_pretrained(self._language_model_name)
-        language_model.trainable = self._language_model_trainable
-        #language_model.output_hidden_states = False
-
+        
         #print the GPUs that tensorflow can find, and enable memory growth.
         # memory growth is something that CJ had to do, but doesn't work for me
         # set memory growth prevents tensor flow from just grabbing all available VRAM
@@ -245,10 +268,13 @@ class MultiLabel_Text_Classifier(Classifier):
         # the padding mask (which masks padded values)
         input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
         input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
-
+ 
+        # create the language model
+        language_model = self.load_language_model()
+        
         #create the embeddings - the 0th index is the last hidden layer
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
-
+        
         #We can create a sentence embedding using the one directly from BERT, or using a biLSTM
         # OR, we can return the sequence from BERT (just don't slice) or the BiLSTM (use retrun_sequences=True)
         #create the sentence embedding layer - using the BERT sentence representation (cls token)    
@@ -321,8 +347,7 @@ class MultiClass_Text_Classifier(Classifier):
         self._num_classes = num_classes
     
         #create the language model
-        language_model = TFAutoModel.from_pretrained(self._language_model_name)
-        language_model.trainable = self._language_model_trainable
+        language_model = self.load_language_model()
 
         #create the model
         #create the input layer, it contains the input ids (from tokenizer) and the
@@ -375,9 +400,7 @@ class MultiLabel_Token_Classifier(Classifier):
         self._num_classes = num_classes
         
         #create the language model
-        language_model = TFAutoModel.from_pretrained(self._language_model_name)
-        language_model.trainable = self._language_model_trainable
-        #language_model.output_hidden_states = False
+        language_model = self.load_language_model()
 
         #print the GPUs that tensorflow can find, and enable memory growth.
         # memory growth is something that CJ had to do, but doesn't work for me
@@ -437,10 +460,7 @@ class MultiClass_Token_Classifier(Classifier):
         self._num_classes = num_classes
         
         #create the language model
-        model_name = self.language_model_name
-        language_model = TFAutoModel.from_pretrained(model_name)
-        language_model.trainable = language_model_trainable
-        #language_model.output_hidden_states = False
+        language_model = self.load_language_model()
 
         #print the GPUs that tensorflow can find, and enable memory growth.
         # memory growth is something that CJ had to do, but doesn't work for me
