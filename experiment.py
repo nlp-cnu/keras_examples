@@ -21,7 +21,7 @@ if __name__ == '__main__':
     seed = 2005 #TODO - need to ensure the seed actually does something
     
     #set up the language model
-    language_model_name = Classifier.BIO_BERT
+    language_model_name = Classifier.BLUE_BERT_PUBMED
     max_length = 512
     #language_model_name = Classifier.ROBERTA
     #max_length=768

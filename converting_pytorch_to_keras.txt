@@ -21,7 +21,9 @@ BlueBERT PubMed:
 2) Convert it by running the following command in the extracted folder:
 transformers-cli convert --model_type bert  --tf_checkpoint=./bert_model.ckpt   --config=./bert_config.json   --pytorch_dump_output=./pytorch_model.bin
 
-3) rename the config file: mv bert_config.json config.json 
+3) rename the config file: mv bert_config.json config.json
+
+4) add the following line to the config files:   "model_type": "bert",  
 
 
 
@@ -37,6 +39,7 @@ transformers-cli convert --model_type bert  --tf_checkpoint=./bert_model.ckpt  -
 
 3) rename the config file: mv bert_config.json config.json 
 
+4) add the following line to the config files:   "model_type": "bert",
 
 
 
