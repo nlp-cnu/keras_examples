@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from Classifier import Classifier
+import Classifier
 
 #Class to generate batches
 # The datagenerator inherits from the sequence class which is used to generate
@@ -12,14 +12,16 @@ class DataGenerator(tf.keras.utils.Sequence):
     def __init__(self, x_set, y_set, batch_size, classifier, shuffle=True):
         self._x = x_set
         self._y = y_set
-        self._batch_size = classifier.batch_size
+        self._batch_size = batch_size
         self._shuffle = shuffle
         self._tokenizer = classifier.tokenizer
-        self._max_length = classifier.max_length
+        self._max_length = classifier._max_length
 
+        
     def __len__(self):
-        return int(np.ceil(len(self.x) / self.batch_size))
+        return int(np.ceil(len(self._x) / self._batch_size))
 
+    
     def __getitem__(self, idx):
         batch_x = self._x[idx * self._batch_size:(idx + 1) * self._batch_size]
         batch_y = self._y[idx * self._batch_size:(idx + 1) * self._batch_size]

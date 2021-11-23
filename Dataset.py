@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
-#import sklearn.model_selection
+import sklearn.model_selection
 from abc import ABC, abstractmethod
 
 #import preprocessor as p
@@ -82,7 +82,7 @@ class Dataset(ABC):
         self.class_weights = class_weight.compute_class_weight(
             class_weight='balanced',
             classes=np.unique(self._train_Y),
-            y=self._train_Y 
+            y = self._train_Y 
             #y=self._train_Y.argmax(axis=1) #TODO -- use this (or something like it) for multiclass problems
         )
         self.class_weights = dict(enumerate(self.class_weights))
@@ -139,8 +139,7 @@ class MultiClass_Text_Classification_Dataset(Dataset):
         data = df[text_column_name].values.tolist()
         #data = self.preprocess_data(raw_data)
         
-        self._training_validation_split(d
-                                        ata, labels)
+        self._training_validation_split(data, labels)
         #self._determine_class_weights() 
     
 #Load a data and labels for a text classification dataset
