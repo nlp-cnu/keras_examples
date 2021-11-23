@@ -144,11 +144,9 @@ def run_multiclass_token_classification_dataset():
     val_x, val_y = data.get_validation_data()
 
     #train the model
-    # If you want to save model weights, use below.
+    #Note: class_weights are not supported for 3D targets, so we can't do it for token classification, at least not how we currently have it set up
     classifier.train(train_x, train_y,
-                     validation_data=(val_x, val_y)
-                     #class_weights = data.get_train_class_weights()
-                     #TODO - class_weights is not supported for 3D targets, so we can't do it for token classification, at least not how we currently have it set up
+                     validation_data=(val_x, val_y)       
     )
 
 

@@ -5,6 +5,10 @@ Examples of custom metrics
 from tensorflow.keras import backend as K
 import tensorflow as tf
 
+
+#TODO - add metrics from jack's code for token classification here and in his classifier
+
+#TODO - implement this class
 class MyMetrics:
     def __init__(self, num_classes):
         self._num_classes = num_classes

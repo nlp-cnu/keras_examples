@@ -396,7 +396,7 @@ class MultiClass_Text_Classifier(Classifier):
 
 #Multilabel token classification is also possible, but unlikely, so I deleted it. If
 # it gets implemented in the future, don't forget to do the correct squashing function
-# for the final layer (Sigmoid) and correct loss (BCE)
+# for the final layer (softmax) and correct loss (CCE)
 
 class MultiClass_Token_Classifier(Classifier):
     
@@ -442,8 +442,8 @@ class MultiClass_Token_Classifier(Classifier):
         # You just plug the output of output2 into the softmax layer
 
         #softmax
-        softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
-        final_output = softmax_layer(output2)
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(output2)
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
@@ -452,12 +452,40 @@ class MultiClass_Token_Classifier(Classifier):
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
         self.model.compile(
             optimizer=optimizer,
-            loss='categorical_crossentropy',
+            loss='binary_crossentropy',
             metrics=['accuracy'] 
         )#TODO - what metrics to report for multiclass? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own, TODO - Jack has some
         #TODO - this is crashing for me, and I'm not sure why. Jack's code works though
 
-
+    def train(self, x, y, batch_size=Classifier.BATCH_SIZE, validation_data=None, epochs=Classifier.EPOCHS, model_out_file_name=Classifier.MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=0, class_weights=None):
+        '''
+        Train for token classifier
+        '''
+        
+        #create a DataGenerator from the training data
+        training_data = Token_Classifier_DataGenerator(x, y, batch_size, self)
+        
+        # generate the validation data (if it exists)
+        if validation_data is not None:
+            validation_data = Token_Classifier_DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
+            
+        # set up callbacks
+        callbacks = []
+        if not model_out_file_name == '':
+            callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
+        if early_stopping_patience > 0:
+            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=5))
+            
+        # fit the model to the training data
+        self.model.fit(
+            training_data,
+            epochs=epochs,
+            validation_data=validation_data,
+            class_weight=class_weights,
+            verbose=2,
+            callbacks=callbacks
+        )
+        
 
 
 #Example of a custom loss function - it doesn't do anything correct, but its how you would write

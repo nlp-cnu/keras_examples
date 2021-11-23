@@ -43,3 +43,27 @@ class DataGenerator(tf.keras.utils.Sequence):
             np.random.shuffle(idxs)
             self._x = [self._x[idx] for idx in idxs]
             self._y = self._y[idxs]
+
+
+
+class Token_Classifier_DataGenerator(DataGenerator):
+    def __init__(self, x_set, y_set, batch_size, classifier, shuffle=True):
+        DataGenerator.__init__(self, x_set, y_set, batch_size, classifier, shuffle=True)
+
+    def __getitem__(self, idx):
+        batch_x = self._x[idx * self._batch_size:(idx + 1) * self._batch_size]
+        batch_y = self._y[idx * self._batch_size:(idx + 1) * self._batch_size]
+
+        #Tokenize the input
+        tokenized = self._tokenizer(batch_x, padding=True, truncation=True, max_length=self._max_length, return_tensors='tf')
+
+        #trim the y_labels to be the max length of the batch
+        num_samples = tokenized['input_ids'].shape[0]
+        num_tokens = tokenized['input_ids'].shape[1]
+        num_classes = batch_y.shape[2]
+
+        cropped_batch_y = np.zeros([num_samples, num_tokens, num_classes])
+        for i in range(num_samples):
+            cropped_batch_y[i][:][:] = batch_y[i][:num_tokens][:]
+                                                     
+        return (tokenized['input_ids'], tokenized['attention_mask']), cropped_batch_y
