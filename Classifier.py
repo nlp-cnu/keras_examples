@@ -101,7 +101,7 @@ class Classifier(ABC):
         return language_model
 
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=0):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=0, class_weights=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -118,23 +118,23 @@ class Classifier(ABC):
         #create a DataGenerator from the training data
         training_data = DataGenerator(x, y, batch_size, self)
         
-        #generate the validation data (if it exists)
+        # generate the validation data (if it exists)
         if validation_data is not None:
-            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self)
-
-        #set up callbacks
+            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
+        
+        # set up callbacks
         callbacks = []
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
             callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=5))
-
             
-        #fit the model to the training data
+        # fit the model to the training data
         self.model.fit(
             training_data,
             epochs=epochs,
             validation_data=validation_data,
+            class_weight=class_weights,
             verbose=2,
             callbacks=callbacks
         )

@@ -5,7 +5,7 @@ import sklearn.model_selection
 from abc import ABC, abstractmethod
 
 #import preprocessor as p
-#from sklearn.utils import class_weight
+import sklearn.utils
 
 #TODO - Should I have a default seed value here?
 SEED = 3
@@ -76,18 +76,41 @@ class Dataset(ABC):
         return self.class_weights
 
 
-    #TODO - see if class weights is working correctly
+    
     def _determine_class_weights(self):
-        # determine class weights
-        self.class_weights = class_weight.compute_class_weight(
-            class_weight='balanced',
-            classes=np.unique(self._train_Y),
-            y = self._train_Y 
-            #y=self._train_Y.argmax(axis=1) #TODO -- use this (or something like it) for multiclass problems
-        )
-        self.class_weights = dict(enumerate(self.class_weights))
+        """
+        Creates a dictionary of class weights such as 
+          class_weight = {0: 1., 1: 50., 2:2.}
+        """
+        
+        # determine class weights for a binary classification task
+        if len(self._train_Y.shape) == 1:
+            self.class_weights = sklearn.utils.class_weight.compute_class_weight(
+                class_weight = 'balanced',
+                classes = np.unique(self._train_Y),
+                y = self._train_Y
+                
+            )
+            self.class_weights = dict(enumerate(self.class_weights))
+            #TODO - check this implementation
+            
+        # determine class weights for a multilabel or multiclass classification task
+        if len(self._train_Y.shape) == 2:
 
+            #calculate the weight of each class
+            samples_per_class = np.sum(self._train_Y, axis=0)
+            total_samples = np.sum(samples_per_class)
+            weights_per_class = samples_per_class/total_samples
 
+            #create the class weights dictionary
+            self.class_weights = {}
+            for i, val in enumerate(weights_per_class):
+                self.class_weights[i]=val
+        else:
+            raise NotImplemented("ERROR: class weights for 3D label matrix is not yet implemented")
+
+            
+        
         
 #TODO - this is based on Max's code and has some hardcoded values - make it more generic
 class MultiLabel_Text_Classification_Dataset(Dataset):
@@ -114,8 +137,9 @@ class MultiLabel_Text_Classification_Dataset(Dataset):
         data = df['Sentence'].values.tolist()
         # data = self.preprocess_data(raw_data)
 
+        # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        # self._determine_class_weights() 
+        self._determine_class_weights() 
 
 
 #Loads data in which there is a single (categorical) label column (e.g. class 0 = 0, class 2 = 2)
@@ -138,9 +162,10 @@ class MultiClass_Text_Classification_Dataset(Dataset):
         raw_data = df[text_column_name]
         data = df[text_column_name].values.tolist()
         #data = self.preprocess_data(raw_data)
-        
+
+        # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        #self._determine_class_weights() 
+        self._determine_class_weights() 
     
 #Load a data and labels for a text classification dataset
 class Binary_Text_Classification_Dataset(Dataset):
@@ -203,9 +228,10 @@ class Binary_Text_Classification_Dataset(Dataset):
         raw_data = df[text_column_name]
         data = df[text_column_name].values.tolist()
         #data = self.preprocess_data(raw_data)
-        
+
+        # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        #self._determine_class_weights()
+        self._determine_class_weights()
         
 
 # TODO -- This will work for multi-class problems, and I think it works for multi-label problems
@@ -242,8 +268,9 @@ class Token_Classification_Dataset(Dataset):
                 labels[i][j][1] = df['treatment'][i][j]
                 labels[i][j][2] = df['test'][i][j]
 
+        # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        # self._determine_class_weights()
+        self._determine_class_weights()
 
 
 
@@ -267,8 +294,9 @@ class My_Personality_Dataset(Dataset):
         #preprocess the data - currently not doing any preprocessing
         #data = self.preprocess_data(raw_data)
 
+        # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        # self._determine_class_weights()
+        self._determine_class_weights()
 
 
 class Essays_Dataset(Dataset):
@@ -290,5 +318,6 @@ class Essays_Dataset(Dataset):
         #preprocess the data - currently not doing any preprocessing
         #data = self.preprocess_data(raw_data)
 
+        # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        # self._determine_class_weights()
+        self._determine_class_weights()
