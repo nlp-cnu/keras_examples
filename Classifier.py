@@ -101,7 +101,7 @@ class Classifier(ABC):
         return language_model
 
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=0):
         '''
         Trains the classifier
         :param x: the training data
@@ -126,6 +126,8 @@ class Classifier(ABC):
         callbacks = []
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
+        if early_stopping_patience > 0:
+            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=5))
 
             
         #fit the model to the training data
@@ -134,7 +136,7 @@ class Classifier(ABC):
             epochs=epochs,
             validation_data=validation_data,
             verbose=2,
-            callbacks = callbacks
+            callbacks=callbacks
         )
 
 

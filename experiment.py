@@ -4,23 +4,24 @@ from Dataset import *
 
 #This is the main running method for the script
 if __name__ == '__main__':
-
-    #batch and epoch variables
+    
+    # training parameters
     max_epoch = 1000
     batch_size = 20
+    early_stopping_patience = 5
+    early_stopping_monitor = 'loss'
 
-    #model hyperparameters
+    # model hyperparameters
     learning_rate = 0.01
     dropout_rate = 0.8
     language_model_trainable = False
-
-    #other parameters
+    # other parameters
     #model_in_file_name = "models/model_out_trainable_true" # to load a model, need to uncomment some code below
     #model_out_file_name = "models/model_out_trainable_true_then_finetune" # to save a model, need to uncomment some code below
-    seed = 2005
+    seed = 2005 #TODO - need to ensure the seed actually does something
     
     #set up the language model
-    language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
+    language_model_name = Classifier.BIO_BERT
     max_length = 512
     #language_model_name = Classifier.ROBERTA
     #max_length=768
@@ -67,7 +68,10 @@ if __name__ == '__main__':
     #                 epochs=max_epoch)
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
-                     epochs=max_epoch)
+                     epochs=max_epoch,
+                     batch_size=batch_size,
+                     early_stopping_patience=5, early_stopping_monitor=early_stopping_monitor
+    )
 
     #predict with the model
     #predictions = classifier.test(test_x)
