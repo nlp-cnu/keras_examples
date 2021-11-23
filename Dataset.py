@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 import sklearn.model_selection
+from ast import literal_eval
 from abc import ABC, abstractmethod
 
 #import preprocessor as p
@@ -76,39 +77,8 @@ class Dataset(ABC):
         return self.class_weights
 
 
-    
     def _determine_class_weights(self):
-        """
-        Creates a dictionary of class weights such as 
-          class_weight = {0: 1., 1: 50., 2:2.}
-        """
-        
-        # determine class weights for a binary classification task
-        if len(self._train_Y.shape) == 1:
-            self.class_weights = sklearn.utils.class_weight.compute_class_weight(
-                class_weight = 'balanced',
-                classes = np.unique(self._train_Y),
-                y = self._train_Y
-                
-            )
-            self.class_weights = dict(enumerate(self.class_weights))
-            #TODO - check this implementation
-            
-        # determine class weights for a multilabel or multiclass classification task
-        if len(self._train_Y.shape) == 2:
-
-            #calculate the weight of each class
-            samples_per_class = np.sum(self._train_Y, axis=0)
-            total_samples = np.sum(samples_per_class)
-            weights_per_class = samples_per_class/total_samples
-
-            #create the class weights dictionary
-            self.class_weights = {}
-            for i, val in enumerate(weights_per_class):
-                self.class_weights[i]=val
-        else:
-            raise NotImplemented("ERROR: class weights for 3D label matrix is not yet implemented")
-
+        raise NotImplemented("ERROR: Class weights is not implemented for this dataset type")
             
         
         
@@ -141,6 +111,23 @@ class MultiLabel_Text_Classification_Dataset(Dataset):
         self._training_validation_split(data, labels)
         self._determine_class_weights() 
 
+    def _determine_class_weights(self):
+        """
+        Creates a dictionary of class weights such as 
+        class_weight = {0: 1., 1: 50., 2:2.}
+        """
+        #calculate the weight of each class
+        samples_per_class = np.sum(self._train_Y, axis=0)
+        total_samples = np.sum(samples_per_class) #TODO - this doesn't account for samples that are all negative
+        weights_per_class = samples_per_class/total_samples
+
+        #create the class weights dictionary
+        self.class_weights = {}
+        for i, val in enumerate(weights_per_class):
+            self.class_weights[i]=val
+
+
+            
 
 #Loads data in which there is a single (categorical) label column (e.g. class 0 = 0, class 2 = 2)
 class MultiClass_Text_Classification_Dataset(Dataset):
@@ -165,7 +152,26 @@ class MultiClass_Text_Classification_Dataset(Dataset):
 
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        self._determine_class_weights() 
+        self._determine_class_weights()
+
+
+    def _determine_class_weights(self):
+        """
+        Creates a dictionary of class weights such as 
+          class_weight = {0: 1., 1: 50., 2:2.}
+        """
+        #calculate the weight of each class
+        samples_per_class = np.sum(self._train_Y, axis=0)
+        total_samples = np.sum(samples_per_class) #TODO - this doesn't account for samples that are all negative
+        weights_per_class = samples_per_class/total_samples
+
+        #create the class weights dictionary
+        self.class_weights = {}
+        for i, val in enumerate(weights_per_class):
+            self.class_weights[i]=val
+
+        #NOTE: this is identical to Multilabel text_classification code (bad form)
+        
     
 #Load a data and labels for a text classification dataset
 class Binary_Text_Classification_Dataset(Dataset):
@@ -203,8 +209,7 @@ class Binary_Text_Classification_Dataset(Dataset):
                 df = pd.read_csv(data_file_path, delimiter='\t').dropna()
 
             labels = df[label_column_name].values.reshape(-1, 1)
-            print ("labels = ", labels)
-        
+            
         #load multilabel classification data. Column names are required
         else:
             #TODO - implement this if/when it is needed. Actual implementation depends on the data format
@@ -231,14 +236,31 @@ class Binary_Text_Classification_Dataset(Dataset):
 
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
+        print ("Breaker one")
         self._determine_class_weights()
+
+
+    def _determine_class_weights(self):
+        """
+        Creates a dictionary of class weights such as 
+        class_weight = {0: 1., 1: 50., 2:2.}
+        """
+
+        #calculate the weight of each class
+        num_positive = np.sum(self._train_Y, axis=0)
+        total_samples = len(self._train_Y)
+
+        #create the class weights (0 = neg, 1 = pos)
+        self.class_weights = {}
+        self.class_weights[1] = num_positive/total_samples
+        self.class_weights[0] = 1.-self.class_weights[1]
         
 
 # TODO -- This will work for multi-class problems, and I think it works for multi-label problems
 # TODO - this currently uses hard-coded values so its functionality is limited. It serves as a template though
 # TODO -- may need to expand for different format types. Right now it is for span start and span end format types
 class Token_Classification_Dataset(Dataset):
-    def __init__(self, data_file_path, model_name, seed=SEED, validation_set_size=0):
+    def __init__(self, data_file_path, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
 
         # read in data
@@ -273,9 +295,30 @@ class Token_Classification_Dataset(Dataset):
         self._determine_class_weights()
 
 
+    #TODO - check this and all other with stats collected independently from the y-labels in the text files
+    #TODO - this doesn't account for negative samples (none of them do)
+    # TODO - this doesn't do anything, because we cannot use class weights when
+    #  passing in a matrix for classification
+    def _determine_class_weights(self):
+        """
+        Creates a dictionary of class weights such as 
+        class_weight = {0: 1., 1: 50., 2:2.}
+        """
+        #calculate the weight of each class
+        samples_per_class = []
+        for i in range(self._train_Y.shape[2]):
+            samples_per_class.append(np.sum(self._train_Y[:,:,i]))
+                                     
+        total_samples = np.sum(samples_per_class) 
+        weights_per_class = samples_per_class/total_samples
+
+        #create the class weights dictionary
+        self.class_weights = {}
+        for i, val in enumerate(weights_per_class):
+            self.class_weights[i]=val
 
 
-class My_Personality_Dataset(Dataset):
+class My_Personality_Dataset(MultiLabel_Text_Classification_Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
@@ -299,7 +342,7 @@ class My_Personality_Dataset(Dataset):
         self._determine_class_weights()
 
 
-class Essays_Dataset(Dataset):
+class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         

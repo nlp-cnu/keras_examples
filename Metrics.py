@@ -5,6 +5,42 @@ Examples of custom metrics
 from tensorflow.keras import backend as K
 import tensorflow as tf
 
+class MyMetrics:
+    def __init__(self, num_classes):
+        self._num_classes = num_classes
+
+    def macro_F1(self, y_true, y_pred):
+        return macro_f1(y_true, y_pred, 5)
+
+        
+    
+
+
+def macro_cF1(y_true, y_pred):
+    return macro_f1(y_true, y_pred, 5)
+
+def macro_cRecall(y_true, y_pred):
+    return macro_recall(y_true, y_pred, 5)
+
+def macro_cPrecision(y_true, y_pred):
+    return macro_precision(y_true, y_pred, 5)
+
+def micro_cF1(y_true, y_pred):
+    return micro_f1(y_true, y_pred, 5)
+
+def micro_cRecall(y_true, y_pred):
+    return micro_recall(y_true, y_pred, 5)
+
+def micro_cPrecision(y_true, y_pred):
+    return micro_precision(y_true, y_pred, 5)
+
+
+
+
+
+
+
+
 ### Right now, I hardcode each of the metrics per class number
 ### And for the number of classes, however there should be a better
 ### way to do this with objects (instaniate with num_classes, and class_num)
@@ -56,23 +92,7 @@ def f1_c3(y_true, y_pred):
 def f1_c4(y_true, y_pred):
     return class_f1(y_true, y_pred, 4)
 
-def macro_cF1(y_true, y_pred):
-    return macro_f1(y_true, y_pred, 5)
 
-def macro_cRecall(y_true, y_pred):
-    return macro_recall(y_true, y_pred, 5)
-
-def macro_cPrecision(y_true, y_pred):
-    return macro_precision(y_true, y_pred, 5)
-
-def micro_cF1(y_true, y_pred):
-    return micro_f1(y_true, y_pred, 5)
-
-def micro_cRecall(y_true, y_pred):
-    return micro_recall(y_true, y_pred, 5)
-
-def micro_cPrecision(y_true, y_pred):
-    return micro_precision(y_true, y_pred, 5)
 
 
 

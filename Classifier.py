@@ -238,8 +238,7 @@ class Binary_Text_Classifier(Classifier):
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
-            metrics =['accuracy', tf.keras.metrics.Precision(), precision_m, tf.keras.metrics.Recall(), recall_m, tfa.metrics.F1Score(1), f1_m] #TODO - get F1 working
-            #metrics=['accuracy', tfa.metrics.F1Score(2)] #TODO -add precision and recall
+            metrics =['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), tfa.metrics.F1Score(1)]
         )
 
         
@@ -320,8 +319,14 @@ class MultiLabel_Text_Classifier(Classifier):
         #fina_output = softmax_layer(output3)
         #TODO - loss='categorical_crossentropy'
         
-        #compile the model
+        #create the optimizer
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+
+        # create the merics
+        #from Metrics import MyMetrics
+        #my_metrics = MyMetrics(self._num_classes)
+        
+        #compile the model
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
@@ -389,67 +394,9 @@ class MultiClass_Text_Classifier(Classifier):
 
 
 
-        
-class MultiLabel_Token_Classifier(Classifier):
-    
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        '''
-        This is nearly identical to the multilabel text classifier, except there is no conversion
-        to a sentence embedding. Instead, there is a label for each term in the input, so the labels
-        have an extra dimension. Really then, the ONLY difference is that no slice/BiLSTM step occurs
-        '''
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
-        self._num_classes = num_classes
-        
-        #create the language model
-        language_model = self.load_language_model()
-
-        #print the GPUs that tensorflow can find, and enable memory growth.
-        # memory growth is something that CJ had to do, but doesn't work for me
-        # set memory growth prevents tensor flow from just grabbing all available VRAM
-        #physical_devices = tf.config.list_physical_devices('GPU')
-        #print (physical_devices)
-        #tf.config.experimental.set_memory_growth(physical_devices[0], True)
-        
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
-        # the padding mask (which masks padded values)
-        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
-        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
-
-        #create the embeddings - the 0th index is the last hidden layer
-        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
-        
-        #now, create some dense layers
-        #dense 1
-        dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(embeddings))
-    
-        #dense 2
-        dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
-        output2 = dropout2(dense2(output1))
-
-        #I have just 2 layers in this network to show how it can be done
-        # You just plug the output of output2 into the softmax layer
-
-        #softmax
-        simgoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
-        final_output = sigmoid_layer(output2)
-    
-        #combine the language model with the classificaiton part
-        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-    
-        #compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
-        self.model.compile(
-            optimizer=optimizer,
-            loss='binary_crossentropy',
-            metrics=['accuracy'] 
-        )#TODO - what metrics to report for multilabel? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own
-
-
+#Multilabel token classification is also possible, but unlikely, so I deleted it. If
+# it gets implemented in the future, don't forget to do the correct squashing function
+# for the final layer (Sigmoid) and correct loss (BCE)
 
 class MultiClass_Token_Classifier(Classifier):
     
@@ -507,7 +454,8 @@ class MultiClass_Token_Classifier(Classifier):
             optimizer=optimizer,
             loss='categorical_crossentropy',
             metrics=['accuracy'] 
-        )#TODO - what metrics to report for multilabel? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own
+        )#TODO - what metrics to report for multiclass? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own, TODO - Jack has some
+        #TODO - this is crashing for me, and I'm not sure why. Jack's code works though
 
 
 
