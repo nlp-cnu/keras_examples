@@ -33,9 +33,24 @@ class WriteMetrics(Callback):
         print('GLOBAL TEST:', mf)
         with open(mf, 'a') as file:
             file.write("{},{:.4f},{:.4f},{:.4f},{:.4f}\n".format(epoch+1, vals[0], vals[1], vals[2], vals[3]))
+            
 
 
 
+
+
+
+
+
+
+
+
+
+
+############################################
+#    I don't need any of these callbacks (I don't think. So, I should be able to delete them
+#############################################
+            
 #TODO - These are other custom callbacks from CJ's code. I need to look at them and determine what exactly they are doing
 class DALStopping(Callback):
     def __init__(self, monitor='accuracy', target_score=0.90):

@@ -116,11 +116,11 @@ class Classifier(ABC):
         '''
         
         #create a DataGenerator from the training data
-        training_data = DataGenerator(x, y, batch_size, self.tokenizer)
+        training_data = DataGenerator(x, y, batch_size, self)
         
         #generate the validation data (if it exists)
         if validation_data is not None:
-            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self.tokenizer)
+            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self)
 
         #set up callbacks
         callbacks = []
