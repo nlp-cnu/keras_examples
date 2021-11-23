@@ -315,29 +315,32 @@ class MultiLabel_Text_Classifier(Classifier):
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-
-        #fina_output = softmax_layer(output3)
-        #TODO - loss='categorical_crossentropy'
         
         #create the optimizer
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
 
         # create the merics
         #from Metrics import MyMetrics
-        #my_metrics = MyMetrics(self._num_classes)
+        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
         
         #compile the model
+        #self.model.compile(
+        #    optimizer=optimizer,
+        #    loss='binary_crossentropy',
+        #    metrics=[macro_cPrecision, macro_cRecall, macro_cF1,
+        #             micro_cPrecision, micro_cRecall, micro_cF1,
+        #             recall_c0, precision_c0, f1_c0,
+        #             recall_c1, precision_c1, f1_c1,
+        #             recall_c2, precision_c2, f1_c2,
+        #             recall_c3, precision_c3, f1_c3,
+        #             recall_c4, precision_c4, f1_c4
+        #     ]
+        #)
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
-            metrics=[macro_cPrecision, macro_cRecall, macro_cF1,
-                     micro_cPrecision, micro_cRecall, micro_cF1,
-                     recall_c0, precision_c0, f1_c0,
-                     recall_c1, precision_c1, f1_c1,
-                     recall_c2, precision_c2, f1_c2,
-                     recall_c3, precision_c3, f1_c3,
-                     recall_c4, precision_c4, f1_c4
-             ]
+            metrics=metrics
         )
 
         
@@ -384,12 +387,17 @@ class MultiClass_Text_Classifier(Classifier):
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
-        #compile the model
+        # create the optimizer
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+
+        # set up the metrics
+        #TODO - do metrics like multi-label
+        
+        #compile the model
         self.model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
-            metrics=['accuracy',tfa.metrics.F1Score(self._num_classes, average='micro', name='micro_f1'), tfa.metrics.F1Score(self._num_classes, average='macro', name='macro_f1')] #TODO - what metrics to report for multilabel? macro/micro F1, etc..?
+            metrics=['accuracy']
         )
 
 

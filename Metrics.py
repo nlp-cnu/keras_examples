@@ -9,96 +9,66 @@ import tensorflow as tf
 #TODO - add metrics from jack's code for token classification here and in his classifier
 
 #TODO - implement this class
-class MyMetrics:
+class MyTextClassificationMetrics:
     def __init__(self, num_classes):
         self._num_classes = num_classes
 
     def macro_F1(self, y_true, y_pred):
-        return macro_f1(y_true, y_pred, 5)
+        return macro_f1(y_true, y_pred, self._num_classes)
 
+    def macro_Recall(y_true, y_pred):
+        return macro_recall(y_true, y_pred, self._num_classes)
+
+    def macro_Precision(y_true, y_pred):
+        return macro_precision(y_true, y_pred, self._num_classes)
+
+    def micro_F1(y_true, y_pred):
+        return micro_f1(y_true, y_pred, self._num_classes)
+
+    def micro_Recall(y_true, y_pred):
+        return micro_recall(y_true, y_pred, self._num_classes)
+
+    def micro_Precision(y_true, y_pred):
+        return micro_precision(y_true, y_pred, self._num_classes)
+
+    class ClassMetric():
+        def __init__(self, class_num):
+            self._class_num = class_num
+
+        def recall(y_true, y_pred):
+            return class_recall(y_true, y_pred, self._class_num)
+
+        def precision(y_true, y_pred):
+            return class_precision(y_true, y_pred, self._class_num)
+
+        def f1(y_true, y_pred):
+            return class_f1(y_true, y_pred, self._class_num)
+
+
+    def get_all_metrics(self):
+        metrics = [ self.macro_Precision, self.macro_Recall, self.macro_F1,
+                    self.micro_Precision, self.micro_Recall, self.micro_F1]
+
+        #TODO - this doesn't work because functions are returned with the same name. I need to dynamically create functions and name them different
+        #TODO - I guess I have to go back to hardcoding
+        for i in range(self._num_classes):
+            class_metric = MyTextClassificationMetrics.ClassMetric(i)    
+            
+            # Add precision, recall, and F1, but we have to change their names
+            # by modiying their attributes. Otherwise Keras throws an error
+            # (error = 2 functions with the same name)
+            metric = class_metric.precision
+            #print(metric)
+            #metric.__name__ = "precision" + str(i)
+            metrics.append(metric)
+            
+            setattr(MyTextClassificationMetrics.ClassMetric, "recall" + str(i), class_metric.recall)
+            metrics.append(class_metric.recall)
+            setattr(MyTextClassificationMetrics.ClassMetric, "f1" + str(i), class_metric.f1)
+            metrics.append(class_metric.f1)
         
-    
-
-
-def macro_cF1(y_true, y_pred):
-    return macro_f1(y_true, y_pred, 5)
-
-def macro_cRecall(y_true, y_pred):
-    return macro_recall(y_true, y_pred, 5)
-
-def macro_cPrecision(y_true, y_pred):
-    return macro_precision(y_true, y_pred, 5)
-
-def micro_cF1(y_true, y_pred):
-    return micro_f1(y_true, y_pred, 5)
-
-def micro_cRecall(y_true, y_pred):
-    return micro_recall(y_true, y_pred, 5)
-
-def micro_cPrecision(y_true, y_pred):
-    return micro_precision(y_true, y_pred, 5)
-
-
-
-
-
-
-
-
-### Right now, I hardcode each of the metrics per class number
-### And for the number of classes, however there should be a better
-### way to do this with objects (instaniate with num_classes, and class_num)
-### Depending on the function that you are computing
-### So, right now, register one of these to actually call. Then the computation
-### Is done using the non-custom (no c) functions
-def recall_c0(y_true, y_pred):
-    return class_recall(y_true, y_pred, 0)
-
-def recall_c1(y_true, y_pred):
-    return class_recall(y_true, y_pred, 1)
-
-def recall_c2(y_true, y_pred):
-    return class_recall(y_true, y_pred, 2)
-
-def recall_c3(y_true, y_pred):
-    return class_recall(y_true, y_pred, 3)
-
-def recall_c4(y_true, y_pred):
-    return class_recall(y_true, y_pred, 4)
-
-def precision_c0(y_true, y_pred):
-    return class_precision(y_true, y_pred, 0)
-
-def precision_c1(y_true, y_pred):
-    return class_precision(y_true, y_pred, 1)
-
-def precision_c2(y_true, y_pred):
-    return class_precision(y_true, y_pred, 2)
-
-def precision_c3(y_true, y_pred):
-    return class_precision(y_true, y_pred, 3)
-
-def precision_c4(y_true, y_pred):
-    return class_precision(y_true, y_pred, 4)
-
-def f1_c0(y_true, y_pred):
-    return class_f1(y_true, y_pred, 0)
-
-def f1_c1(y_true, y_pred):
-    return class_f1(y_true, y_pred, 1)
-
-def f1_c2(y_true, y_pred):
-    return class_f1(y_true, y_pred, 2)
-
-def f1_c3(y_true, y_pred):
-    return class_f1(y_true, y_pred, 3)
-
-def f1_c4(y_true, y_pred):
-    return class_f1(y_true, y_pred, 4)
-
-
-
-
+        return metrics
+            
 
 # Macro-Averaged Prec, Recall, F1
 def macro_f1(y_true, y_pred, num_classes):

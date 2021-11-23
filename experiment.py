@@ -229,7 +229,7 @@ if __name__ == '__main__':
     #run_complex_example()
     
     #run_binary_text_classification_dataset()
-    #run_multilabel_text_classification_dataset()
-    run_multiclass_token_classification_dataset()
+    run_multilabel_text_classification_dataset()
     
     #run_essays_dataset()
+    #TODO - add other datasets that I'm actually working on here
