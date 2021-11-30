@@ -388,7 +388,7 @@ class i2b2Dataset(MultiLabel_Text_Classification_Dataset):
         # Needs to be a list of the sentences
         data = df['Sentence'].values.tolist()
         # data = self.preprocess_data(raw_data)
-
+        
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
         self._determine_class_weights() 
@@ -405,15 +405,25 @@ class i2b2Dataset(MultiLabel_Text_Classification_Dataset):
         #calculate the weight of each class
         num_classes = self._train_Y.shape[1]
         samples_per_class = []
+        #for i in range(num_classes):
+        #    samples_per_class.append(np.sum(self._train_Y[:,i]))
+        num_samples = self._train_Y.shape[0]
         for i in range(num_classes):
-            samples_per_class.append(np.sum(self._train_Y[:,i]))
-                                     
-        total_samples = np.sum(samples_per_class) 
-        weights_per_class = samples_per_class/total_samples
-
+            samples_per_class.append(0)
+            for j in range(num_samples):
+                if self._train_Y[j,i] == 1:
+                    samples_per_class[i] += 1
+        
+        
         #TODO - verify with outside data that the samples per class is correct
         # TODO - again, this doesn't take into account negative data
         print ("samples_per_class = ", samples_per_class)
+        print ("num_samples = ", num_samples)
+
+        
+        total_samples = np.sum(samples_per_class) 
+        weights_per_class = samples_per_class/total_samples
+
         
         #create the class weights dictionary
         self.class_weights = {}
