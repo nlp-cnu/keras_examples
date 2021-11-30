@@ -364,3 +364,58 @@ class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
         self._determine_class_weights()
+
+class i2b2Dataset(MultiLabel_Text_Classification_Dataset):
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
+        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
+        # load the labels
+
+        # May want to reformat my converter to have a header line and separate each individual relationship value with a tab
+        # For example, first line = sentence\tPIP\tTeRP\tTaRP\t etc....
+        # basic line would look like this: sentence\t0\t0\t0\t0\t0\t1\t0\t1
+        # MAY NEED TO GET RID OF THIS IF STATEMENT AND ITS CODE
+        # if (text_column_name is None or label_column_name is None):
+        #     text_column_name = 'text'
+        #     label_column_name = 'label'
+        #     df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name],
+        #                      delimiter='\t').dropna()
+        # else:
+        df = pd.read_csv(data_file_path, delimiter='\t').dropna()
+
+        labels = df.loc[:, 'TrIP':'PIP'].to_numpy()# **** Needs to be a 2d list, list of lists containing 8 0's or 1's indicating relation *****
+
+        # load the data
+        # Needs to be a list of the sentences
+        data = df['Sentence'].values.tolist()
+        # data = self.preprocess_data(raw_data)
+
+        # These two calls must be made at the end of creating a dataset
+        self._training_validation_split(data, labels)
+        self._determine_class_weights() 
+
+    def _determine_class_weights(self):
+        """
+        Creates a dictionary of class weights such as 
+        class_weight = {0: 1., 1: 50., 2:2.}
+        """
+
+        print("self._train_Y.shape = ", self._train_Y.shape)
+        print(self._train_Y)
+        
+        #calculate the weight of each class
+        num_classes = self._train_Y.shape[1]
+        samples_per_class = []
+        for i in range(num_classes):
+            samples_per_class.append(np.sum(self._train_Y[:,i]))
+                                     
+        total_samples = np.sum(samples_per_class) 
+        weights_per_class = samples_per_class/total_samples
+
+        #TODO - verify with outside data that the samples per class is correct
+        # TODO - again, this doesn't take into account negative data
+        print ("samples_per_class = ", samples_per_class)
+        
+        #create the class weights dictionary
+        self.class_weights = {}
+        for i, val in enumerate(weights_per_class):
+            self.class_weights[i]=val
