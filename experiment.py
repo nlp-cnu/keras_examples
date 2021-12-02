@@ -221,7 +221,7 @@ def run_essays_dataset():
                      batch_size=batch_size,
                      mode_out_file_name=model_out_file_name,
                      early_stopping_patience=5, early_stopping_monitor=early_stopping_monitor,
-                     class_weights = data.get_train_class_weights
+                     class_weights = data.get_train_class_weights()
     )
 
 
@@ -230,7 +230,7 @@ def run_i2b2_dataset():
    
     # training parameters
     max_epoch = 1000
-    batch_size = 20
+    batch_size = 200
     early_stopping_patience = 5
     early_stopping_monitor = 'loss'
 
@@ -294,9 +294,9 @@ def run_i2b2_dataset():
                      validation_data=(val_x, val_y),
                      epochs=max_epoch,
                      batch_size=batch_size,
-                     #mode_out_file_name=model_out_file_name,
+                     #model_out_file_name=model_out_file_name,
                      early_stopping_patience=5, early_stopping_monitor=early_stopping_monitor,
-                     class_weights=data.get_train_class_weights
+                     class_weights=data.get_train_class_weights()
     )
 
 

@@ -236,7 +236,6 @@ class Binary_Text_Classification_Dataset(Dataset):
 
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        print ("Breaker one")
         self._determine_class_weights()
 
 
@@ -399,8 +398,8 @@ class i2b2Dataset(MultiLabel_Text_Classification_Dataset):
         class_weight = {0: 1., 1: 50., 2:2.}
         """
 
-        print("self._train_Y.shape = ", self._train_Y.shape)
-        print(self._train_Y)
+        #print("self._train_Y.shape = ", self._train_Y.shape)
+        #print(self._train_Y)
         
         #calculate the weight of each class
         num_classes = self._train_Y.shape[1]
@@ -417,13 +416,13 @@ class i2b2Dataset(MultiLabel_Text_Classification_Dataset):
         
         #TODO - verify with outside data that the samples per class is correct
         # TODO - again, this doesn't take into account negative data
-        print ("samples_per_class = ", samples_per_class)
-        print ("num_samples = ", num_samples)
+        #print ("samples_per_class = ", samples_per_class)
+        #print ("num_samples = ", num_samples)
 
         
         total_samples = np.sum(samples_per_class) 
         weights_per_class = samples_per_class/total_samples
-
+        
         
         #create the class weights dictionary
         self.class_weights = {}
