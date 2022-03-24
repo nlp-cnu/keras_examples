@@ -65,7 +65,7 @@ class Token_Classifier_DataGenerator(DataGenerator):
         cropped_batch_y = np.zeros([num_samples, num_tokens, num_classes])
         for i in range(num_samples):
             # Note, this code assumes there is a tag for the CLS token, either modify your output, or label all CLS tokens as 0
-            # To label all CLS tokens as 0, cropped_bath_y[i][[:][:] = batch_y[i][1:num_tokens][:]
+            # To label all CLS tokens as 0, cropped_bath_y[i][[:][:] = batch_y[i][1:num_tokens+1][:]
             cropped_batch_y[i][:][:] = batch_y[i][:num_tokens][:]
                                                      
         return (tokenized['input_ids'], tokenized['attention_mask']), cropped_batch_y
