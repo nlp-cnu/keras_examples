@@ -1,7 +1,7 @@
 tensorflow
 transformers
 tensorflow_addons
-numpy==1.19.5
+numpy
 pandas
 pydot
 scikit-learn
