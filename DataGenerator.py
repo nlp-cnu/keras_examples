@@ -43,6 +43,7 @@ class DataGenerator(tf.keras.utils.Sequence):
             np.random.shuffle(idxs)
             self._x = [self._x[idx] for idx in idxs]
             self._y = self._y[idxs]
+            #TODO - this will shuffle for I think just a single class label. Will it work correctly with multi-label problems?  I think I need to do the same thing I do with x above
 
 
 
@@ -69,3 +70,6 @@ class Token_Classifier_DataGenerator(DataGenerator):
             cropped_batch_y[i][:][:] = batch_y[i][:num_tokens][:]
                                                      
         return (tokenized['input_ids'], tokenized['attention_mask']), cropped_batch_y
+
+
+    #TODO - I should add an on_epoch_end, and shuffle the dataset
