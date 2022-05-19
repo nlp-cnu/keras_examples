@@ -113,8 +113,7 @@ def replicate_i2b2_relex_results():
     dropout_rate = 0.2
     language_model_trainable = True
     learning_rate = 1e-5
-    #max_epoch = 20
-    max_epoch = 100
+    #batch_size = 20
     batch_size = 20
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
     num_classes = 8
@@ -122,21 +121,19 @@ def replicate_i2b2_relex_results():
     test_data_filepath = '../data/i2b2_relex/test_concept_filter.tsv'
     
 
-    #load the training dataset
+    #load the training data and train the model (no validation data)
+    #max_epoch = 20
     #training_data = i2b2RelexDataset(training_data_filepath)
     #train_x, train_y = training_data.get_train_data()
-    
-    #create classifier
     #classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
-    
-    #train the model
     #classifier.train(train_x, train_y,
     #                 epochs=max_epoch,
     #                 batch_size=batch_size
     #)
 
     
-    #load the training dataset
+    #load the training dataset and train the model (using validation data and early stopping)
+    max_epoch = 3
     training_data = i2b2RelexDataset(training_data_filepath, validation_set_size=0.10)
     train_x, train_y = training_data.get_train_data()
     val_x, val_y = training_data.get_validation_data()
@@ -156,13 +153,16 @@ def replicate_i2b2_relex_results():
     #load the test data and make predictions
     test_data = i2b2RelexDataset(test_data_filepath)
     test_x, test_y = test_data.get_train_data()
-    predictions = classifier.predict(test_x)
+    #predictions = classifier.predict(test_x)
+    predictions = classifier.predict(val_x)
 
     #convert predictions to labels and compute stats 
     predicted_labels = np.round(predictions)
     #binary_predictions = [[1 if y >= 0.5 else 0 for y in pred] for pred in predictions_y]
-    print(sklearn.metrics.classification_report(test_y, predicted_labels, 
-    target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
+    #print(sklearn.metrics.classification_report(test_y, predicted_labels, 
+    #                                            target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
+    print(sklearn.metrics.classification_report(val_y, predicted_labels, 
+                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
 
     
     

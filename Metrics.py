@@ -10,6 +10,9 @@ import tensorflow as tf
 #TODO - I hate this code, its a mess. maybe break up into functional and not?
 # --- you can't pass object methods into keras because self counts as the first positional argument
 
+
+#Note: Remember that the metrics are averaged over each batch, so the reported precision, recall, F1 may be different than if it is calculated over the entire dataset at once. The results reported here tend to be lower than the actual scores (from my limited observation). 
+
 class MyTextClassificationMetrics:
 
     num_classes = None
@@ -22,13 +25,13 @@ class MyTextClassificationMetrics:
         for i in range(MyTextClassificationMetrics.num_classes):
             sum += MyTextClassificationMetrics.class_f1(y_true, y_pred, i)
         return sum/MyTextClassificationMetrics.num_classes
-
+        
     def macro_recall(y_true, y_pred):
         sum = 0
         for i in range(MyTextClassificationMetrics.num_classes):
             sum += MyTextClassificationMetrics.class_recall(y_true, y_pred, i)
         return sum/MyTextClassificationMetrics.num_classes
-
+        
     def macro_precision(y_true, y_pred):
         sum = 0
         for i in range(MyTextClassificationMetrics.num_classes):
@@ -41,7 +44,6 @@ class MyTextClassificationMetrics:
          return 2*((precision * recall)/(precision + recall + K.epsilon()))
 
     def micro_recall(y_true, y_pred):
-        # TODO - I don't think this is correct
         true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
         possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
         return true_positives / (possible_positives + K.epsilon())
@@ -70,21 +72,25 @@ class MyTextClassificationMetrics:
     # Class-specific Prec, Recall, F1
     def class_recall(y_true, y_pred, class_num):
         class_y_true = tf.gather(y_true, [class_num], axis=1)
+        possible_positives = K.sum(K.round(K.clip(class_y_true, 0, 1)))
+        # if no samples are positive in this batch, return 1 so that the average is more accurate
+        if possible_positives == 0.0:
+            return 1.0
         class_y_pred = tf.gather(y_pred, [class_num], axis=1)
         true_positives = K.sum(K.round(K.clip(class_y_true * class_y_pred, 0, 1)))
-        possible_positives = K.sum(K.round(K.clip(class_y_true, 0, 1)))
-        recall = true_positives / (possible_positives + K.epsilon())
+        recall = true_positives / (possible_positives + K.epsilon())        
         return recall
 
 
     def class_precision(y_true, y_pred, class_num):
         class_y_true = tf.gather(y_true, [class_num], axis=1)
+        possible_positives = K.sum(K.round(K.clip(class_y_true, 0, 1)))
         class_y_pred = tf.gather(y_pred, [class_num], axis=1)
         true_positives = K.sum(K.round(K.clip(class_y_true * class_y_pred, 0, 1)))
         predicted_positives = K.sum(K.round(K.clip(class_y_pred, 0, 1)))
         precision = true_positives / (predicted_positives + K.epsilon())
         return precision
-
+        
 
     def class_f1(y_true, y_pred, class_num):
         precision = MyTextClassificationMetrics.class_precision(y_true, y_pred, class_num)
