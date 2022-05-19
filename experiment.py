@@ -117,7 +117,8 @@ def replicate_i2b2_relex_results():
     batch_size = 20
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
     num_classes = 8
-    training_data_filepath = '../data/i2b2_relex/training_concept_filter.tsv'
+    #training_data_filepath = '../data/i2b2_relex/training_concept_filter.tsv'
+    training_data_filepath = '../data/i2b2_relex/training_and_test_all.tsv'
     test_data_filepath = '../data/i2b2_relex/test_concept_filter.tsv'
     
 
@@ -162,7 +163,6 @@ def replicate_i2b2_relex_results():
 
     #convert predictions to labels and compute stats 
     predicted_labels = np.round(predictions)
-    binary_predictions = [[1 if y >= 0.5 else 0 for y in pred] for pred in predictions_y]
     print(sklearn.metrics.classification_report(test_y, predicted_labels, 
                                                 target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
     
