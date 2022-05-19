@@ -105,6 +105,66 @@ def run_binary_text_classification_dataset():
 
 # TODO - I don't think I have a multiclass text classification dataset
 
+
+
+# script to replicate i2b2 relex results from Max's Thesis
+def replicate_i2b2_relex_results():
+    #hard code the optimal hyperparameters
+    dropout_rate = 0.2
+    language_model_trainable = True
+    learning_rate = 1e-5
+    #max_epoch = 20
+    max_epoch = 100
+    batch_size = 20
+    language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
+    num_classes = 8
+    training_data_filepath = '../data/i2b2_relex/training_concept_filter.tsv'
+    test_data_filepath = '../data/i2b2_relex/test_concept_filter.tsv'
+    
+
+    #load the training dataset
+    #training_data = i2b2RelexDataset(training_data_filepath)
+    #train_x, train_y = training_data.get_train_data()
+    
+    #create classifier
+    #classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    
+    #train the model
+    #classifier.train(train_x, train_y,
+    #                 epochs=max_epoch,
+    #                 batch_size=batch_size
+    #)
+
+    
+    #load the training dataset
+    training_data = i2b2RelexDataset(training_data_filepath, validation_set_size=0.10)
+    train_x, train_y = training_data.get_train_data()
+    val_x, val_y = training_data.get_validation_data()
+    
+    #create classifier
+    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    
+    #train the model
+    classifier.train(train_x, train_y,
+                     epochs=max_epoch,
+                     batch_size=batch_size,
+                     validation_data=(val_x, val_y),
+                     early_stopping_patience = 5,
+                     early_stopping_monitor = 'val_macro_F1'
+    )
+    
+    #load the test data and make predictions
+    test_data = i2b2RelexDataset(test_data_filepath)
+    test_x, test_y = test_data.get_train_data()
+    predictions = classifier.predict(test_x)
+
+    #convert predictions to labels and compute stats 
+    predicted_labels = np.round(predictions)
+    #binary_predictions = [[1 if y >= 0.5 else 0 for y in pred] for pred in predictions_y]
+    print(sklearn.metrics.classification_report(test_y, predicted_labels, 
+    target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
+
+    
     
 # Simple example to test multilabel text classification datasets
 def run_multilabel_text_classification_dataset():
@@ -217,11 +277,12 @@ def run_essays_dataset():
     #                 epochs=max_epoch)
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
-                     epochs=max_epoch,
                      batch_size=batch_size,
-                     mode_out_file_name=model_out_file_name,
-                     early_stopping_patience=5, early_stopping_monitor=early_stopping_monitor,
-                     class_weights = data.get_train_class_weights()
+                     #mode_out_file_name=model_out_file_name,
+                     early_stopping_patience=early_stopping_patience,
+                     early_stopping_monitor=early_stopping_monitor,
+                     class_weights = data.get_train_class_weights(),
+                     epochs=max_epoch
     )
 
 
@@ -248,7 +309,7 @@ def run_i2b2_dataset():
     max_length = 512
     
     #load the dataset
-    data_filepath = '../data/i2b2_relex/i2b2_converted.tsv'
+    data_filepath = '../data/i2b2_relex/split_train.tsv'
     num_classes = 8
     data = i2b2Dataset(data_filepath, validation_set_size=0.2)
     #data = i2b2Dataset(data_filepath)
@@ -285,20 +346,13 @@ def run_i2b2_dataset():
     )
     
     #train the model
-    # If you want to save model weights, use below.
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 model_out_file_name=model_out_file_name,
-    #                 epochs=max_epoch)
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
-                     epochs=max_epoch,
-                     batch_size=batch_size,
-                     #model_out_file_name=model_out_file_name,
+                     class_weights=data.get_train_class_weights(),
                      early_stopping_patience=5, early_stopping_monitor=early_stopping_monitor,
-                     class_weights=data.get_train_class_weights()
+                     batch_size=batch_size,
+                     epochs=max_epoch
     )
-
 
 
 #This is the main running method for the script
@@ -311,4 +365,5 @@ if __name__ == '__main__':
     #run_multilabel_text_classification_dataset()
     
     #run_essays_dataset()
-    run_i2b2_dataset()
+    #run_i2b2_dataset()
+    replicate_i2b2_relex_results()

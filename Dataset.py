@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 
 #import preprocessor as p
 import sklearn.utils
+import csv
 
 #TODO - Should I have a default seed value here?
 SEED = 3
@@ -364,30 +365,40 @@ class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
         self._training_validation_split(data, labels)
         self._determine_class_weights()
 
-class i2b2Dataset(MultiLabel_Text_Classification_Dataset):
+class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
-        # load the labels
-
-        # May want to reformat my converter to have a header line and separate each individual relationship value with a tab
-        # For example, first line = sentence\tPIP\tTeRP\tTaRP\t etc....
-        # basic line would look like this: sentence\t0\t0\t0\t0\t0\t1\t0\t1
-        # MAY NEED TO GET RID OF THIS IF STATEMENT AND ITS CODE
-        # if (text_column_name is None or label_column_name is None):
-        #     text_column_name = 'text'
-        #     label_column_name = 'label'
-        #     df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name],
-        #                      delimiter='\t').dropna()
-        # else:
-        df = pd.read_csv(data_file_path, delimiter='\t').dropna()
-
-        labels = df.loc[:, 'TrIP':'PIP'].to_numpy()# **** Needs to be a 2d list, list of lists containing 8 0's or 1's indicating relation *****
-
-        # load the data
-        # Needs to be a list of the sentences
-        data = df['Sentence'].values.tolist()
-        # data = self.preprocess_data(raw_data)
         
+        #read the file and extract the labels and the data
+        df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE).dropna()
+        labels = df.loc[:, 'TrIP':'PIP'].to_numpy()
+        data = df['Sentence'].values.tolist()
+
+        #calculate some stats
+        with_multi = 0
+        with_none = 0
+        with_one = 0
+        print ("labels.shape = ", labels.shape)
+        print ("len(data) = ", len(data))
+        [rows, cols] = labels.shape
+        print ("rows, cols = " + str(rows) + ", " + str(cols))
+        for i in range(rows):
+            row = labels[i,:]
+            #print ("row = " + str(row))
+            total = np.sum(row)
+            if total > 1:
+                with_multi +=1
+            elif total == 1:
+                with_one += 1
+            elif total == 0:
+                with_none += 1
+           
+        print ("num_rows = " + str(rows))
+        print ("total = " + str(total))
+        print ("with_multi = " + str(with_multi))
+        print ("with_none = " + str(with_none))
+        print ("with_one = " + str(with_one))
+
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
         self._determine_class_weights() 

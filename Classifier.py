@@ -101,7 +101,7 @@ class Classifier(ABC):
         return language_model
 
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=0, class_weights=None):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -127,7 +127,24 @@ class Classifier(ABC):
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
-            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=5))
+            #try to correctly set the early stopping mode
+            #  (checks if it should stop when increasing (max) or decreasing (min)
+            if early_stopping_mode == '':
+                if 'loss' in early_stopping_monitor.lower():
+                    early_stopping_mode='min'
+                elif 'f1' in early_stopping_monitor.lower():
+                    early_stopping_mode='max'
+                elif 'prec' in early_stopping_monitor.lower():
+                    early_stopping_mode='max'
+                elif 'rec' in early_stopping_monitor.lower():
+                    early_stopping_mode='max'
+                elif 'acc' in early_stopping_monitor.lower():
+                    early_stopping_mode='max'
+                else:
+                    early_stopping_mode='auto'    
+                print ("early_stopping_mode automatically set to " + str(early_stopping_mode))
+            
+            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=early_stopping_patience, restore_best_weights=restore_best_weights, mode=early_stopping_mode))
             
         # fit the model to the training data
         self.model.fit(
@@ -197,38 +214,47 @@ class Binary_Text_Classifier(Classifier):
 
         #We can create a sentence embedding using the one directly from BERT, or using a biLSTM
         # OR, we can return the sequence from BERT (just don't slice) or the BiLSTM (use retrun_sequences=True)
-        #create the sentence embedding layer - using the BERT sentence representation (cls token)    
-        #sentence_representation_language_model = embeddings[:,0,:]
+        #create the sentence embedding layer - using the BERT sentence representation (cls token)
+        sentence_representation_language_model = embeddings[:,0,:]
         #Note: we are slicing because this is a sentence classification task. We only need the cls predictions
         # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
         # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
 
         #Alternatively, we can use a biLSTM to create a sentence representation -- This seems to generally work better
         #create the sentence embedding layer using a biLSTM and BERT token representations
-        lstm_size=128
-        biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
-        sentence_representation_biLSTM = biLSTM_layer(embeddings)
+        #lstm_size=128
+        #biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
+        #sentence_representation_biLSTM = biLSTM_layer(embeddings)
+
+
+
+        dense1 = tf.keras.layers.Dense(128, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+
+
+        sigmoid_layer = tf.keras.layers.Dense(1, activation='sigmoid')
+        final_output = sigmoid_layer(output3)
         
         #now, create some dense layers
         #dense 1
-        dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(sentence_representation_biLSTM))
+        #dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        #dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        #output1 = dropout1(dense1(sentence_representation_biLSTM))
         #output1 = dropout1(dense1(sentence_representation_language_model))
     
         #dense 2
-        dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
-        output2 = dropout2(dense2(output1))
+        #dense2 = tf.keras.layers.Dense(128, activation='gelu')
+        #dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
+        #output2 = dropout2(dense2(output1))
 
         #dense 3
-        dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
-        output3 = dropout3(dense3(output2))
+        #dense3 = tf.keras.layers.Dense(64, activation='gelu')
+        #dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
+        #output3 = dropout3(dense3(output2))
 
         #softmax
-        sigmoid_layer = tf.keras.layers.Dense(1, activation='sigmoid')
-        final_output = sigmoid_layer(output3)
+        #sigmoid_layer = tf.keras.layers.Dense(1, activation='sigmoid')
+        #final_output = sigmoid_layer(output3)
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
@@ -343,7 +369,66 @@ class MultiLabel_Text_Classifier(Classifier):
             metrics=metrics
         )
 
+
+
+class i2b2_Relex_Classifier(Classifier):
+
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         
+        # set instance attributes
+        self._num_classes = num_classes
+        
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
+ 
+        # create the language model
+        language_model = self.load_language_model()
+        
+        #create and grab the sentence embedding (the CLS token)
+        sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
+  
+        #now, create some dense layers
+        #dense 1
+        dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        output1 = dropout1(dense1(sentence_representation))
+    
+        #dense 2
+        dense2 = tf.keras.layers.Dense(128, activation='gelu')
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
+        output2 = dropout2(dense2(output1))
+
+        #dense 3
+        dense3 = tf.keras.layers.Dense(64, activation='gelu')
+        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
+        output3 = dropout3(dense3(output2))
+
+        #softmax
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(output3)
+    
+        #combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+        
+        #create the optimizer
+        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+
+        # create the merics
+        #from Metrics import MyMetrics
+        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
+        
+        #compile the model
+        self.model.compile(
+            optimizer=optimizer,
+            loss='binary_crossentropy',
+            metrics=metrics
+        )
+
 
 
 class MultiClass_Text_Classifier(Classifier):
