@@ -122,48 +122,50 @@ def replicate_i2b2_relex_results():
     
 
     #load the training data and train the model (no validation data)
-    #max_epoch = 20
-    #training_data = i2b2RelexDataset(training_data_filepath)
-    #train_x, train_y = training_data.get_train_data()
-    #classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
-    #classifier.train(train_x, train_y,
-    #                 epochs=max_epoch,
-    #                 batch_size=batch_size
-    #)
-
-    
-    #load the training dataset and train the model (using validation data and early stopping)
-    max_epoch = 3
-    training_data = i2b2RelexDataset(training_data_filepath, validation_set_size=0.10)
+    max_epoch = 20
+    training_data = i2b2RelexDataset(training_data_filepath)
     train_x, train_y = training_data.get_train_data()
-    val_x, val_y = training_data.get_validation_data()
-    
-    #create classifier
     classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
-    
-    #train the model
     classifier.train(train_x, train_y,
                      epochs=max_epoch,
                      batch_size=batch_size,
-                     validation_data=(val_x, val_y),
-                     early_stopping_patience = 5,
-                     early_stopping_monitor = 'val_macro_F1'
+                     # add this just so that the best weights are restored.
+                     #  Right now it will always train for 20 epochs then
+                     #  restore the weights with the best val_loss
+                     early_stopping_patience = 20,
+                     early_stopping_monitor = 'micro_F1'
     )
+
+    
+    #load the training dataset and train the model (using validation data and early stopping)
+    #max_epoch = 100
+    #training_data = i2b2RelexDataset(training_data_filepath, validation_set_size=0.10)
+    #train_x, train_y = training_data.get_train_data()
+    #val_x, val_y = training_data.get_validation_data()
+    
+    #create classifier
+    #classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    
+    #train the model
+    #classifier.train(train_x, train_y,
+    #                 epochs=max_epoch,
+    #                 batch_size=batch_size,
+    #                 validation_data=(val_x, val_y),
+    #                 early_stopping_patience = 5,
+    #                 early_stopping_monitor = 'val_macro_F1'
+    #)
     
     #load the test data and make predictions
     test_data = i2b2RelexDataset(test_data_filepath)
     test_x, test_y = test_data.get_train_data()
-    #predictions = classifier.predict(test_x)
-    predictions = classifier.predict(val_x)
+    predictions = classifier.predict(test_x)
 
     #convert predictions to labels and compute stats 
     predicted_labels = np.round(predictions)
-    #binary_predictions = [[1 if y >= 0.5 else 0 for y in pred] for pred in predictions_y]
-    #print(sklearn.metrics.classification_report(test_y, predicted_labels, 
-    #                                            target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
-    print(sklearn.metrics.classification_report(val_y, predicted_labels, 
+    binary_predictions = [[1 if y >= 0.5 else 0 for y in pred] for pred in predictions_y]
+    print(sklearn.metrics.classification_report(test_y, predicted_labels, 
                                                 target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
-
+    
     
     
 # Simple example to test multilabel text classification datasets
