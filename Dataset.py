@@ -120,7 +120,7 @@ class MultiLabel_Text_Classification_Dataset(Dataset):
         #calculate the weight of each class
         samples_per_class = np.sum(self._train_Y, axis=0)
         total_samples = np.sum(samples_per_class) #TODO - this doesn't account for samples that are all negative
-        weights_per_class = samples_per_class/total_samples
+        weights_per_class = 1-(samples_per_class/total_samples)
 
         #create the class weights dictionary
         self.class_weights = {}
@@ -164,7 +164,7 @@ class MultiClass_Text_Classification_Dataset(Dataset):
         #calculate the weight of each class
         samples_per_class = np.sum(self._train_Y, axis=0)
         total_samples = np.sum(samples_per_class) #TODO - this doesn't account for samples that are all negative
-        weights_per_class = samples_per_class/total_samples
+        weights_per_class = 1-(samples_per_class/total_samples)
 
         #create the class weights dictionary
         self.class_weights = {}
@@ -252,9 +252,10 @@ class Binary_Text_Classification_Dataset(Dataset):
 
         #create the class weights (0 = neg, 1 = pos)
         self.class_weights = {}
-        self.class_weights[1] = num_positive/total_samples
-        self.class_weights[0] = 1.-self.class_weights[1]
-        
+        self.class_weights[0] = num_positive/total_samples
+        self.class_weights[1] = 1.-self.class_weights[0]
+
+            
 
 # TODO -- This will work for multi-class problems, and I think it works for multi-label problems
 # TODO - this currently uses hard-coded values so its functionality is limited. It serves as a template though
@@ -310,7 +311,7 @@ class Token_Classification_Dataset(Dataset):
             samples_per_class.append(np.sum(self._train_Y[:,:,i]))
                                      
         total_samples = np.sum(samples_per_class) 
-        weights_per_class = samples_per_class/total_samples
+        weights_per_class = 1-(samples_per_class/total_samples)
 
         #create the class weights dictionary
         self.class_weights = {}
@@ -432,7 +433,7 @@ class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
 
         
         total_samples = np.sum(samples_per_class) 
-        weights_per_class = samples_per_class/total_samples
+        weights_per_class = 1-(samples_per_class/total_samples)
         
         
         #create the class weights dictionary

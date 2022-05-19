@@ -43,6 +43,7 @@ class DataGenerator(tf.keras.utils.Sequence):
             np.random.shuffle(idxs)
             self._x = [self._x[idx] for idx in idxs]
             self._y = self._y[idxs]
+            #TODO - this will shuffle for I think just a single class label. Will it work correctly with multi-label problems?  I think I need to do the same thing I do with x above
 
 
 
@@ -64,6 +65,11 @@ class Token_Classifier_DataGenerator(DataGenerator):
 
         cropped_batch_y = np.zeros([num_samples, num_tokens, num_classes])
         for i in range(num_samples):
+            # Note, this code assumes there is a tag for the CLS token, either modify your output, or label all CLS tokens as 0
+            # To label all CLS tokens as 0, cropped_bath_y[i][[:][:] = batch_y[i][1:num_tokens+1][:]
             cropped_batch_y[i][:][:] = batch_y[i][:num_tokens][:]
                                                      
         return (tokenized['input_ids'], tokenized['attention_mask']), cropped_batch_y
+
+
+    #TODO - I should add an on_epoch_end, and shuffle the dataset
