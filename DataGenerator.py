@@ -40,18 +40,18 @@ class DataGenerator(tf.keras.utils.Sequence):
         """
         if self._shuffle_data:
             # generate shuffled indexes
-            idxs = np.arange(len(self._train_X))
+            idxs = np.arange(len(self._x))
             np.random.shuffle(idxs)
             # shuffle the data
-            self._train_X = [self._train_X[idx] for idx in idxs]
-            self._train_Y = self._train_Y[idxs]
+            self._x = [self._x[idx] for idx in idxs]
+            self._y = self._y[idxs]
 
             # Note: we shuffle like above rather than some other method because
             # X must be a list of text and Y should by a Numpy Array
             # You have to do list comprehension to shuffle lists, but the Numpy method
             # for Y is (probably) faster. So, don't do like below:
-            #   self._train_Y = [self._train_Y[idx] for idx in idxs]
-            #   self._train_X = self._train_X[idxs]
+            #   self._y = [self._y[idx] for idx in idxs]
+            #   self._x = self._x[idxs]
 
             
 

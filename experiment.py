@@ -308,7 +308,7 @@ def run_i2b2_dataset():
 
     #load the training data and train the model (no validation data)
     training_data = i2b2RelexDataset(training_data_filepath, validation_set_size=0.1)
-    training_data.balance_dataset(max_num_samples=10000)
+    training_data.balance_dataset()
 
     train_x, train_y = training_data.get_train_data()
     val_x, val_y = training_data.get_validation_data()

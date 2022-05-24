@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 #import preprocessor as p
 import sklearn.utils
 import csv
+import sys
 
 #TODO - Should I have a default seed value here?
 SEED = 3
@@ -57,9 +58,8 @@ class Dataset(ABC):
             raise Exception("Error: test set size must be greater than 0 and less than 1")
         
         if (self._val_set_size > 0):
-            # TODO - this doesn't do stratified sampling by default
-            #Split the data - this automatically does a stratified split
-            # meaning that the class ratios are maintained
+            # TODO - this doesn't do stratified sampling - you need to specify stratify=labels, but its unclear how to do that for a multilabel problem
+            #Split the data
             self._train_X, self._val_X, self._train_Y, self._val_Y = sklearn.model_selection.train_test_split(
                 data, labels, test_size=self._val_set_size, random_state=self.seed, shuffle=self._shuffle_data)
         else:
@@ -119,7 +119,7 @@ class Dataset(ABC):
         raise NotImplemented("ERROR: Class weights is not implemented for this dataset type")
             
 
-    def balance_dataset(self, max_num_samples=-1):
+    def balance_dataset(self, max_num_samples=sys.maxsize):
         """
         Attempts to balance the dataset, but for multilabel problems this is 
         basically impossible, since adding to one class will add to another class
@@ -172,7 +172,7 @@ class Dataset(ABC):
         #TODO - this won't oversample samples with all negative labels. I'm not sure you'd ever want to do that though
         #       undersampling does undersample all negative labels though
 
-        if max_num_samples > 0:
+        if max_num_samples < sys.maxsize:
             ### Under Sampling ###
             for class_num in range(num_classes):
                 self._train_X, self._train_Y = self._undersample(self._train_X, self._train_Y, class_num, max_num_samples)
