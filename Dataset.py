@@ -83,21 +83,16 @@ class Dataset(ABC):
             
 
     
-    def _balance_dataset(self):
-
-        
-        num_classes = self._train_Y.shape[1]
-        
-        #calculate some stats - not all of this is needed
-        
+    def balance_dataset(self, max_num_samples=-1):
+        """
+        Attempts to balance the dataset, but for multilabel problems this is 
+        basically impossible, since adding to one class will add to another class
+        """
+        #calculate some stats        
         with_multi = 0
         with_none = 0
         with_one = 0
-        
-        print ("labels.shape = ", self._train_Y.shape)
-        print ("len(data) = ", len(self._train_X))
         [rows, cols] = self._train_Y.shape
-        print ("rows, cols = " + str(rows) + ", " + str(cols))
         for i in range(rows):
             row = self._train_Y[i,:]
             total = np.sum(row)
@@ -107,30 +102,24 @@ class Dataset(ABC):
                 with_one += 1
             elif total == 0:
                 with_none += 1           
-        print ("num_rows = " + str(rows))
-        print ("total = " + str(total))
-        print ("with_multi = " + str(with_multi))
-        print ("with_none = " + str(with_none))
-        print ("with_one = " + str(with_one))
+        print ("samples with multiple labels = " + str(with_multi))
+        print ("samples with no labels = " + str(with_none))
+        print ("samples with one label = " + str(with_one))
 
-
-        #TODO - somehow add undersampling in here (max num_samples?)
-        #max_num_samples = 10000, then undersample the negative class
-
-        
+ 
+        #### Over Sampling ####
         # determine how much you need to oversample
         num_classes = self._train_Y.shape[1]
-        class_counts = np.sum(self._train_Y, axis=0)
-        print("class_counts = ", class_counts)        
-        goal_num_samples = max([with_none, max(class_counts)])
-        print ("goal_num_samples = " + str(goal_num_samples))
+        class_counts = np.sum(self._train_Y, axis=0)        
+        goal_num_samples = max([min(with_none, max_num_samples), max(class_counts)])
+        print("class_counts before oversampling = ", class_counts)
         
-        print ("num_classes = " + str(num_classes))
-        #generate new samples and labels for each class
+        # generate lists of new samples
         new_data_list = []
         new_labels_list = []
+        #generate new samples and labels for each class
         for class_num in range(num_classes):
-            new_class_data, new_class_labels = self.oversample(self._train_X, self._train_Y, class_num, goal_num_samples)
+            new_class_data, new_class_labels = self._oversample(self._train_X, self._train_Y, class_num, goal_num_samples)
             new_data_list.append(new_class_data)
             new_labels_list.append(new_class_labels)
 
@@ -142,15 +131,106 @@ class Dataset(ABC):
                 self._train_X.append(sample)
             # add the labels (labels are a numpy array)
             self._train_Y = np.concatenate((self._train_Y, new_labels_list[class_num]), axis=0)
-           
+        print("class_counts after over_sampling = ", np.sum(self._train_Y, axis=0))        
+
+        #TODO - this won't oversample samples with all negative labels. I'm not sure you'd ever want to do that though
+        #       undersampling does undersample all negative labels though
+
+        if max_num_samples > 0:
+            ### Under Sampling ###
+            for class_num in range(num_classes):
+                self._train_X, self._train_Y = self._undersample(self._train_X, self._train_Y, class_num, max_num_samples)
+            self._train_X, self._train_Y = self._undersample_all_negative_labels(self._train_X, self._train_Y, max_num_samples)
+
+            ### Debug stuff
+            print("class_counts after under_sampling = ", np.sum(self._train_Y, axis=0))      
+            with_none = 0
+            [rows, cols] = self._train_Y.shape
+            for i in range(rows):
+                row = self._train_Y[i,:]
+                total = np.sum(row)
+                if total == 0:
+                    with_none += 1           
+            print ("with no labels after under sampling = " + str(with_none))
+            ### End Debug
+            
+        #shuffle the data
+        idxs = np.arange(len(self._train_X))
+        np.random.shuffle(idxs)
+        self._train_X = [self._train_X[idx] for idx in idxs]
+        self._train_Y = self._train_Y[idxs]
+        #TODO - check this shuffle too
         
-    def oversample(self, data, labels, class_num, goal_num_samples):
+        exit()
+        
+        #TODO - make sure you shuffle the data
+
+
+    def _undersample_all_negative_labels(self, data, labels, max_num_samples):
+        """
+        undersamples a class by randomly removing samples until the goal_num_samples is met
+        returns the data and labels with the elements deleted
+        """
+        # collect samples with no labels
+        [rows, cols] = labels.shape
+        none_indexes = []
+        for i in range(rows):
+            row = labels[i,:]
+            total = np.sum(row)
+            if total == 0:
+                none_indexes.append(i)
+        num_with_none = len(none_indexes)
+
+        # check if you need to undersample
+        if num_with_none <= max_num_samples:
+            return data, labels
+
+        # undersample the negative class
+        num_samples_to_remove = num_with_none - max_num_samples
+        #remove non-repeating indexes
+        indexes_to_remove = np.random.choice(num_with_none, num_samples_to_remove, replace=False)
+        samples_to_remove = np.array(none_indexes)[indexes_to_remove]
+
+        new_data = np.delete(data, samples_to_remove)
+        new_labels = np.delete(labels, samples_to_remove, axis=0)
+
+        return new_data, new_labels
+     
+        
+    def _undersample(self, data, labels, class_num, max_num_samples):
+        """
+        undersamples a class by randomly removing samples until the goal_num_samples is met
+        returns the data and labels with the elements deleted
+        """
+        
+        # check if you need to undersample
+        class_count = np.sum(self._train_Y, axis=0)[class_num]
+        if class_count <= max_num_samples:
+            return data, labels
+        
+        # perform undersampling
+        class_labels = labels[:,class_num]
+        class_sample_indexes = np.where(class_labels == 1)[0]
+        
+        num_samples_to_remove = class_count - max_num_samples
+        # remove non-repeating indexes
+        indexes_to_remove = np.random.choice(class_count, num_samples_to_remove, replace=False)
+        samples_to_remove = class_sample_indexes[indexes_to_remove]
+
+        new_data = np.delete(data, samples_to_remove)
+        new_labels = np.delete(labels, samples_to_remove, axis=0)
+
+        return new_data, new_labels
+
+    
+            
+    def _oversample(self, data, labels, class_num, goal_num_samples):
         """
         over samples a class by randomly selecting additional samples until the goal_num_samples is met
         returns a tuple of new samples and new labels to add to the dataset
         """
         
-        #create a list of indeces of samples of this class
+        # create a list of indeces of samples of this class
         class_labels = labels[:,class_num]
         class_sample_indexes = np.where(class_labels == 1)[0]
         num_class_samples = len(class_sample_indexes)
@@ -159,25 +239,18 @@ class Dataset(ABC):
         if num_class_samples >= goal_num_samples:
             return [], np.array([])
         
-        #randomly select the samples to repeat and add them to the dataset
-        # this is done by randomly generating indeces corresponding to the
-        # class_samples list.
+        # randomly select the samples to repeat and add them to the dataset
+        #  this is done by randomly generating indeces corresponding to the
+        #  class_samples list.
         num_new_samples = goal_num_samples - num_class_samples
+        # select (possibly repeating) indexes
         indexes_to_select = np.random.randint(num_class_samples, size=num_new_samples)
         samples_to_select = class_sample_indexes[indexes_to_select]
 
         return np.array(data)[samples_to_select], labels[samples_to_select]
     
 
-    def undersample(self, data, labels, class_num, goal_num_samples):
-        """
-        undersamples a class by randomly removing samples until the goal_num_samples is met
-        """
-        pass
 
-    
-    #TODO - we can pretty easily implement SMOTE in the classifier
-    
         
 #TODO - this is based on Max's code and has some hardcoded values - make it more generic
 class MultiLabel_Text_Classification_Dataset(Dataset):
@@ -473,8 +546,8 @@ class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
 
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
-        self._balance_dataset()
-        self._determine_class_weights() 
+        #self._balance_dataset()
+        #self._determine_class_weights() 
 
         
     def _determine_class_weights(self):
