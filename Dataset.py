@@ -156,6 +156,8 @@ class Dataset(ABC):
             
         #shuffle the data
         idxs = np.arange(len(self._train_X))
+        print ("idxs = ", idxs)
+        print ("idxs.shape = ", idxs.shape)
         np.random.shuffle(idxs)
         self._train_X = [self._train_X[idx] for idx in idxs]
         self._train_Y = self._train_Y[idxs]
