@@ -310,8 +310,6 @@ def run_i2b2_dataset():
     training_data = i2b2RelexDataset(training_data_filepath, validation_set_size=0.1)
     training_data.balance_dataset(max_num_samples=10000)
 
-    exit()
-    
     train_x, train_y = training_data.get_train_data()
     val_x, val_y = training_data.get_validation_data()
     classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)

@@ -13,7 +13,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         self._x = x_set
         self._y = y_set
         self._batch_size = batch_size
-        self._shuffle_data = shuffle
+        self._shuffle_data = shuffle_data
         self._tokenizer = classifier.tokenizer
         self._max_length = classifier._max_length
 
@@ -39,18 +39,19 @@ class DataGenerator(tf.keras.utils.Sequence):
         :return:
         """
         if self._shuffle_data:
-            idxs = np.arange(len(self._x))
+            # generate shuffled indexes
+            idxs = np.arange(len(self._train_X))
             np.random.shuffle(idxs)
-            #self._x = [self._x[idx] for idx in idxs]
-            #self._y = self._y[idxs]
-
-            # Note: Both of these methods work for sentence (text) classification tasks. 
-            # If a bug occurs then, try the top one
-            #self._train_X = [self._train_X[idx] for idx in idxs]
-            #self._train_Y = [self._train_Y[idx] for idx in idxs]
-
-            self._train_X = self._train_X[idxs]
+            # shuffle the data
+            self._train_X = [self._train_X[idx] for idx in idxs]
             self._train_Y = self._train_Y[idxs]
+
+            # Note: we shuffle like above rather than some other method because
+            # X must be a list of text and Y should by a Numpy Array
+            # You have to do list comprehension to shuffle lists, but the Numpy method
+            # for Y is (probably) faster. So, don't do like below:
+            #   self._train_Y = [self._train_Y[idx] for idx in idxs]
+            #   self._train_X = self._train_X[idxs]
 
             
 

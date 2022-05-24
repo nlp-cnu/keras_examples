@@ -33,29 +33,35 @@ class Dataset(ABC):
         """
         Shuffle the order of the data 
         """
+        # generate shuffled indexes
         idxs = np.arange(len(self._train_X))
         np.random.shuffle(idxs)
-   
-        #self._train_X = [self._train_X[idx] for idx in idxs]
-        #self._train_Y = [self._train_Y[idx] for idx in idxs]
-        self._train_X = self._train_X[idxs]
+        # shuffle the data
+        self._train_X = [self._train_X[idx] for idx in idxs]
         self._train_Y = self._train_Y[idxs]
-     
+
+        # Note: we shuffle like above rather than some other method because
+        # X must be a list of text and Y should by a Numpy Array
+        # You have to do list comprehension to shuffle lists, but the Numpy method
+        # for Y is (probably) faster. So, don't do like below:
+        #   self._train_Y = [self._train_Y[idx] for idx in idxs]
+        #   self._train_X = self._train_X[idxs]
+        
+        
     def _training_validation_split(self, data, labels):
         """
         Performs a stratified training-validation split
         """
-        if self._shuffle_data:
-            self._shuffle() 
-        
         # Error Checking
         if (self._val_set_size >= 1):
             raise Exception("Error: test set size must be greater than 0 and less than 1")
         
         if (self._val_set_size > 0):
+            # TODO - this doesn't do stratified sampling by default
             #Split the data - this automatically does a stratified split
             # meaning that the class ratios are maintained
-            self._train_X, self._val_X, self._train_Y, self._val_Y = sklearn.model_selection.train_test_split(data, labels, test_size=self._val_set_size, random_state=self.seed)
+            self._train_X, self._val_X, self._train_Y, self._val_Y = sklearn.model_selection.train_test_split(
+                data, labels, test_size=self._val_set_size, random_state=self.seed, shuffle=self._shuffle_data)
         else:
             # set the data to unsplit
             self._train_X = data
@@ -63,6 +69,22 @@ class Dataset(ABC):
             self._val_X = None
             self._val_Y = None
 
+            if self._shuffle_data:
+                self._shuffle() 
+
+        # ensure the training data is a list of text (required for tokenizer)
+        if type(self._train_X) is type(np.array):
+            self._train_X = self._train_X.tolist()
+        # ensure the labels are a numpy array
+        self._train_Y = np.array(self._train_Y)
+        # do the same for validation data if it exists
+        if self._val_X is not None:
+            if type(self._val_X) is type(np.array):
+                self._val_X = self._val_X.tolist()
+            self._val_Y = np.array(self._val_Y)
+        
+
+                
             
     def get_train_data(self):
         if self._train_X is None or self._train_Y is None:
@@ -168,7 +190,7 @@ class Dataset(ABC):
             print ("with no labels after under sampling = " + str(with_none))
             ### End Debug
 
-        if self.shuffle_data:
+        if self._shuffle_data:
             self._shuffle()
                     
 
