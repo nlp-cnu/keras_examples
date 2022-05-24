@@ -16,23 +16,38 @@ SEED = 3
 class Dataset(ABC):
     
     @abstractmethod
-    def __init__(self, seed=SEED, validation_set_size=0):
+    def __init__(self, seed=SEED, validation_set_size=0, shuffle_data=True):
         """
         Constructor for a Dataset
         validation_set_size is the percentage to use for validation set (e.g. 0.2 = 20%
         """
         self.seed = seed
+        self._shuffle_data = shuffle_data
         self._val_set_size = validation_set_size
         self._train_X = None # must be of type list[str]
         self._train_Y = None # should be a list or numpy array
         self._val_X = None
         self._val_Y = None
 
-
+    def _shuffle(self):
+        """
+        Shuffle the order of the data 
+        """
+        idxs = np.arange(len(self._train_X))
+        np.random.shuffle(idxs)
+   
+        #self._train_X = [self._train_X[idx] for idx in idxs]
+        #self._train_Y = [self._train_Y[idx] for idx in idxs]
+        self._train_X = self._train_X[idxs]
+        self._train_Y = self._train_Y[idxs]
+     
     def _training_validation_split(self, data, labels):
         """
         Performs a stratified training-validation split
-        """   
+        """
+        if self._shuffle_data:
+            self._shuffle() 
+        
         # Error Checking
         if (self._val_set_size >= 1):
             raise Exception("Error: test set size must be greater than 0 and less than 1")
@@ -82,7 +97,6 @@ class Dataset(ABC):
         raise NotImplemented("ERROR: Class weights is not implemented for this dataset type")
             
 
-    
     def balance_dataset(self, max_num_samples=-1):
         """
         Attempts to balance the dataset, but for multilabel problems this is 
@@ -153,20 +167,10 @@ class Dataset(ABC):
                     with_none += 1           
             print ("with no labels after under sampling = " + str(with_none))
             ### End Debug
-            
-        #shuffle the data
-        idxs = np.arange(len(self._train_X))
-        print ("idxs = ", idxs)
-        print ("idxs.shape = ", idxs.shape)
-        np.random.shuffle(idxs)
-        self._train_X = [self._train_X[idx] for idx in idxs]
-        self._train_Y = self._train_Y[idxs]
-        #TODO - check this shuffle too
-        
-        exit()
-        
-        #TODO - make sure you shuffle the data
 
+        if self.shuffle_data:
+            self._shuffle()
+                    
 
     def _undersample_all_negative_labels(self, data, labels, max_num_samples):
         """

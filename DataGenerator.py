@@ -9,11 +9,11 @@ import Classifier
 # on the maximum length of sequences in the batch)
 class DataGenerator(tf.keras.utils.Sequence):
     
-    def __init__(self, x_set, y_set, batch_size, classifier, shuffle=True):
+    def __init__(self, x_set, y_set, batch_size, classifier, shuffle_data=True):
         self._x = x_set
         self._y = y_set
         self._batch_size = batch_size
-        self._shuffle = shuffle
+        self._shuffle_data = shuffle
         self._tokenizer = classifier.tokenizer
         self._max_length = classifier._max_length
 
@@ -38,18 +38,26 @@ class DataGenerator(tf.keras.utils.Sequence):
         epoch (therefore improving performance)
         :return:
         """
-        if self._shuffle:
+        if self._shuffle_data:
             idxs = np.arange(len(self._x))
             np.random.shuffle(idxs)
-            self._x = [self._x[idx] for idx in idxs]
-            self._y = self._y[idxs]
-            #TODO - this will shuffle for I think just a single class label. Will it work correctly with multi-label problems?  I think I need to do the same thing I do with x above
+            #self._x = [self._x[idx] for idx in idxs]
+            #self._y = self._y[idxs]
 
+            # Note: Both of these methods work for sentence (text) classification tasks. 
+            # If a bug occurs then, try the top one
+            #self._train_X = [self._train_X[idx] for idx in idxs]
+            #self._train_Y = [self._train_Y[idx] for idx in idxs]
+
+            self._train_X = self._train_X[idxs]
+            self._train_Y = self._train_Y[idxs]
+
+            
 
 
 class Token_Classifier_DataGenerator(DataGenerator):
-    def __init__(self, x_set, y_set, batch_size, classifier, shuffle=True):
-        DataGenerator.__init__(self, x_set, y_set, batch_size, classifier, shuffle=True)
+    def __init__(self, x_set, y_set, batch_size, classifier, shuffle_data=True):
+        DataGenerator.__init__(self, x_set, y_set, batch_size, classifier, shuffle_data=True)
 
     def __getitem__(self, idx):
         batch_x = self._x[idx * self._batch_size:(idx + 1) * self._batch_size]
