@@ -69,8 +69,8 @@ class Dataset(ABC):
             self._val_X = None
             self._val_Y = None
 
-            if self._shuffle_data:
-                self._shuffle() 
+        if self._shuffle_data:
+            self._shuffle() 
 
         # ensure the training data is a list of text (required for tokenizer)
         if type(self._train_X) is type(np.array):
@@ -82,10 +82,7 @@ class Dataset(ABC):
             if type(self._val_X) is type(np.array):
                 self._val_X = self._val_X.tolist()
             self._val_Y = np.array(self._val_Y)
-        
-
-                
-            
+                    
     def get_train_data(self):
         if self._train_X is None or self._train_Y is None:
             raise Exception("Error: train data does not exist, you must call _training_validation_split after loading data")
@@ -296,13 +293,17 @@ class MultiLabel_Text_Classification_Dataset(Dataset):
         #     df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name],
         #                      delimiter='\t').dropna()
         # else:
-        df = pd.read_csv(data_file_path, delimiter='\t').dropna()
 
+        # You can either dropna, or fill na with "", I prefer fillna("")
+        #df = pd.read_csv(data_file_path, delimiter='\t').dropna()
+        df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE)
+        
+        
         labels = df.loc[:, 'TrIP':'PIP'].to_numpy()# **** Needs to be a 2d list, list of lists containing 8 0's or 1's indicating relation *****
 
         # load the data
         # Needs to be a list of the sentences
-        data = df['Sentence'].values.tolist()
+        data = df['Sentence'].fillna("").values.tolist()
         # data = self.preprocess_data(raw_data)
 
         # These two calls must be made at the end of creating a dataset
@@ -336,18 +337,16 @@ class MultiClass_Text_Classification_Dataset(Dataset):
         if (text_column_name is None or label_column_name is None):
             text_column_name = 'text'
             label_column_name = 'label'
-            df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name], delimiter='\t').dropna()
+            df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name], delimiter='\t', quoting=csv.QUOTE_NONE)#.dropna()
         else:
-            df = pd.read_csv(data_file_path, delimiter='\t').dropna()
+            df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE)#.dropna()
             
         label_encoder = OneHotEncoder(sparse=False)
         labels = label_encoder.fit_transform(df[label_column_name].values.reshape(-1, 1))
                 
         #load the data
-        raw_data = df[text_column_name]
-        data = df[text_column_name].values.tolist()
-        #data = self.preprocess_data(raw_data)
-
+        data = df[text_column_name].fillna("").values.tolist()
+        
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
         self._determine_class_weights()
@@ -402,9 +401,9 @@ class Binary_Text_Classification_Dataset(Dataset):
             if (text_column_name is None or label_column_name is None):
                 text_column_name = 'text'
                 label_column_name = 'label'
-                df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name], delimiter='\t').dropna()
+                df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name], delimiter='\t', quoting=csv.QUOTE_NONE)#.dropna()
             else:
-                df = pd.read_csv(data_file_path, delimiter='\t').dropna()
+                df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE)#.dropna()
 
             labels = df[label_column_name].values.reshape(-1, 1)
             
@@ -429,9 +428,8 @@ class Binary_Text_Classification_Dataset(Dataset):
             
         #load the data
         raw_data = df[text_column_name]
-        data = df[text_column_name].values.tolist()
-        #data = self.preprocess_data(raw_data)
-
+        data = df[text_column_name].fillna("").values.tolist()
+        
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
         self._determine_class_weights()
@@ -462,11 +460,11 @@ class Token_Classification_Dataset(Dataset):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
 
         # read in data
-        df = pd.read_csv(data_file_path, delimiter='\t', names=['text', 'problem', 'treatment', 'test']).dropna()
+        df = pd.read_csv(data_file_path, delimiter='\t', names=['text', 'problem', 'treatment', 'test'], quoting=csv.QUOTE_NONE)#.dropna()
         df['problem'] = df.problem.apply(literal_eval)
         df['treatment'] = df.treatment.apply(literal_eval)
         df['test'] = df.test.apply(literal_eval)
-        data = df['text'].tolist()
+        data = df['text'].fillna("").tolist()
 
         # tokenize the data to generate y-values for each token
         # self.model_name = model_name
@@ -521,12 +519,12 @@ class My_Personality_Dataset(MultiLabel_Text_Classification_Dataset):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
         # load the data
-        df = pd.read_csv(data_file_path, delimiter=',')#.dropna()
+        df = pd.read_csv(data_file_path, delimiter=',', quoting=csv.QUOTE_NONE)#.dropna()
         #df.columns of interest are:
         #  STATUS = the text
         #  cEXT, cNEU, cAGR, cCON, cOPN for categorical (yes/no) for each of the traits
         #get the data
-        data = df['STATUS'].values.tolist()
+        data = df['STATUS'].fillna("").values.tolist()
 
         #get the labels, which are y/n values. So, convert them to 1/0 values
         ynlabels = np.array(df.loc[:, 'cEXT':'cOPN'])
@@ -545,12 +543,12 @@ class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
         # load the data
-        df = pd.read_csv(data_file_path, delimiter=',')#.dropna()
+        df = pd.read_csv(data_file_path, delimiter=',', quoting=csv.QUOTE_NONE)#.dropna()
         #df.columns of interest are:
         #  TEXT = the text
         #  cEXT, cNEU, cAGR, cCON, cOPN for categorical (yes/no) for each of the traits
         #get the data
-        data = df['TEXT'].values.tolist()
+        data = df['TEXT'].fillna("").values.tolist()
 
         #get the labels, which are y/n values. So, convert them to 1/0 values
         ynlabels = np.array(df.loc[:, 'cEXT':'cOPN'])
@@ -568,9 +566,9 @@ class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
         #read the file and extract the labels and the data
-        df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE).dropna()
+        df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE)#.dropna()
         labels = df.loc[:, 'TrIP':'PIP'].to_numpy()
-        data = df['Sentence'].values.tolist()
+        data = df['Sentence'].fillna("").values.tolist()
 
         # These two calls must be made at the end of creating a dataset
         self._training_validation_split(data, labels)
