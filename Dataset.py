@@ -30,7 +30,7 @@ class Dataset(ABC):
         self._val_X = None
         self._val_Y = None
 
-    def _shuffle(self):
+    def shuffle(self):
         """
         Shuffle the order of the data 
         """
@@ -70,7 +70,7 @@ class Dataset(ABC):
             self._val_Y = None
 
         if self._shuffle_data:
-            self._shuffle() 
+            self.shuffle() 
 
         # ensure the training data is a list of text (required for tokenizer)
         if type(self._train_X) is type(np.array):
@@ -188,7 +188,7 @@ class Dataset(ABC):
             ### End Debug
 
         if self._shuffle_data:
-            self._shuffle()
+            self.shuffle()
                     
 
     def _undersample_all_negative_labels(self, data, labels, max_num_samples):
@@ -562,8 +562,8 @@ class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
         self._determine_class_weights()
 
 class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
-    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
-        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0, shuffle_data=True):
+        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
         
         #read the file and extract the labels and the data
         df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE)#.dropna()

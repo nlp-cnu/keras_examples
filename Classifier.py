@@ -88,8 +88,8 @@ class Classifier(ABC):
     def load_language_model(self):
         # either load the language model locally or grab it from huggingface
         if os.path.isdir(self._language_model_name):
-             language_model = TFBertModel.from_pretrained(self._language_model_name, from_pt=True)
-        # else the language model can be grabbed directly from huggingface
+            language_model = TFBertModel.from_pretrained(self._language_model_name, from_pt=True)
+            # else the language model can be grabbed directly from huggingface
         else:
             language_model = TFAutoModel.from_pretrained(self._language_model_name)
 
@@ -378,6 +378,9 @@ class i2b2_Relex_Classifier(Classifier):
         
         # set instance attributes
         self._num_classes = num_classes
+
+        #physical_devices = tf.config.list_physical_devices('GPU')
+        #print (physical_devices)
         
         #create the model
         #create the input layer, it contains the input ids (from tokenizer) and the
