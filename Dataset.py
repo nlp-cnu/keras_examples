@@ -562,8 +562,8 @@ class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
         self._determine_class_weights()
 
 class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
-    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
-        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
+    def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0, shuffle_data=True):
+        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data)
         
         #read the file and extract the labels and the data
         df = pd.read_csv(data_file_path, delimiter='\t', quoting=csv.QUOTE_NONE)#.dropna()
