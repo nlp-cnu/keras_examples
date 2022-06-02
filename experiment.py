@@ -117,8 +117,8 @@ def replicate_i2b2_relex_results():
     batch_size = 20
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
     num_classes = 8
-    #training_data_filepath = '../data/i2b2_relex/training_concept_filter.tsv'
-    training_data_filepath = '../data/i2b2_relex/training_and_test_all.tsv'
+    training_data_filepath = '../data/i2b2_relex/training_concept_filter.tsv'
+    #training_data_filepath = '../data/i2b2_relex/training_and_test_all.tsv'
     test_data_filepath = '../data/i2b2_relex/test_concept_filter.tsv'
     
 
@@ -294,7 +294,7 @@ def run_essays_dataset():
 def run_i2b2_dataset():
 
     #hard code the optimal hyperparameters
-    max_epoch = 1
+    max_epoch = 100
     dropout_rate = 0.2
     language_model_trainable = True
     learning_rate = 1e-5
@@ -302,37 +302,42 @@ def run_i2b2_dataset():
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
     num_classes = 8
     #training_data_filepath = '../data/i2b2_relex/training_concept_filter.tsv'
-    training_data_filepath = '../data/i2b2_relex/training_and_test_all.tsv'
+    training_data_filepath = '../data/i2b2_relex/training_all.tsv'
     test_data_filepath = '../data/i2b2_relex/test_concept_filter.tsv'
     
 
     #load the training data and train the model (no validation data)
     training_data = i2b2RelexDataset(training_data_filepath, validation_set_size=0.1)
-    training_data.balance_dataset()
-
+    #training_data.balance_dataset()
+    
     train_x, train_y = training_data.get_train_data()
     val_x, val_y = training_data.get_validation_data()
-    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
-    classifier.train(train_x, train_y,
-                     epochs=max_epoch,
-                     batch_size=batch_size,
-                     validation_data=(val_x, val_y),
-                     early_stopping_patience = 5,
-                     early_stopping_monitor = 'val_micro_F1'
-    )
-    
+
+
     #load the test data and make predictions
     test_data = i2b2RelexDataset(test_data_filepath)
     test_x, test_y = test_data.get_train_data()
-    predictions = classifier.predict(test_x)
-
-    #convert predictions to labels and compute stats 
-    predicted_labels = np.round(predictions)
-    print(sklearn.metrics.classification_report(test_y, predicted_labels, 
-                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
     
 
-    classifier.save_weights('my_models/i2b2_ner/oversampled_weights')
+    for noise_rate in [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 0]:
+        classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate, noise_rate=noise_rate)
+        classifier.train(train_x, train_y,
+                         epochs=max_epoch,
+                         batch_size=batch_size,
+                         validation_data=(val_x, val_y),
+                         early_stopping_patience = 5,
+                         early_stopping_monitor = 'val_micro_F1'
+        )
+    
+    
+        predictions = classifier.predict(test_x)
+
+        #convert predictions to labels and compute stats 
+        predicted_labels = np.round(predictions)
+        print(sklearn.metrics.classification_report(test_y, predicted_labels, 
+                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
+    
+    #classifier.save_weights('my_models/i2b2_ner/oversampled_weights')
 
     
 

@@ -373,7 +373,7 @@ class MultiLabel_Text_Classifier(Classifier):
 
 class i2b2_Relex_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         
         # set instance attributes
@@ -390,6 +390,11 @@ class i2b2_Relex_Classifier(Classifier):
         
         #create and grab the sentence embedding (the CLS token)
         sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
+
+        #TODO - experiment with noise layer --- it seems like it takes forever to train with it. What is going on?
+        if noise_rate > 0:
+            noise_layer = tf.keras.layers.GaussianNoise(0.1)
+            sentence_representation = noise_layer(sentence_representation)
   
         #now, create some dense layers
         #dense 1
