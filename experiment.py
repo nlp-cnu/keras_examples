@@ -367,12 +367,9 @@ def few_shot_learning():
     test_data = i2b2RelexDataset(test_data_filepath)
     test_x, test_y = test_data.get_train_data()
 
-    #create the classifier
-    print ("Initializing Classifier")
-    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
-
     #output zero-shot results
     print ("Generating Zero Shot Results")
+    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
     predictions = classifier.predict(test_x)
     predicted_labels = np.round(predictions)
     print(sklearn.metrics.classification_report(test_y, predicted_labels, 
@@ -402,6 +399,7 @@ def few_shot_learning():
                 
         # train the classifier
         print ("   training n={} classifier".format(num_samples))
+        classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
         classifier.train(x, y,
                          epochs=max_epoch,
                          batch_size=batch_size,
