@@ -1,4 +1,6 @@
 from tensorflow.keras.callbacks import Callback, EarlyStopping
+import numpy as np
+import sklearn
 
 class SaveModelWeightsCallback(Callback):
     "Saves the Model after each iteration of training"
@@ -36,8 +38,25 @@ class WriteMetrics(Callback):
             
 
 
+class OutputTestSetPerformanceCallback(Callback):
+    '''
+    Callback to output the test set performance to the console
+    '''
 
+    def __init__(self, classifier, test_x, test_y):
+        Callback.__init__(self)
+        self._classifier = classifier
+        self._test_x = test_x
+        self._test_y = test_y
 
+    def on_epoch_end(self, epoch, logs=None):
+        print ("Epoch {} test set performance".format(epoch+1))
+        predictions = self._classifier.predict(self._test_x)
+        predicted_labels = np.round(predictions)
+        print(sklearn.metrics.classification_report(self._test_y, predicted_labels, 
+                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
+        
+        
 
 
 

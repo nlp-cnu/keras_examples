@@ -319,22 +319,22 @@ def run_i2b2_dataset():
     test_x, test_y = test_data.get_train_data()
     
 
-    for noise_rate in [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 0]:
-        classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate, noise_rate=noise_rate)
-        classifier.train(train_x, train_y,
-                         epochs=max_epoch,
-                         batch_size=batch_size,
-                         validation_data=(val_x, val_y),
-                         early_stopping_patience = 5,
-                         early_stopping_monitor = 'val_micro_F1'
-        )
+    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    classifier.train(train_x, train_y,
+                     epochs=max_epoch,
+                     batch_size=batch_size,
+                     validation_data=(val_x, val_y),
+                     early_stopping_patience = 5,
+                     early_stopping_monitor = 'val_micro_F1',
+                     test_data = (test_x, test_y)
+    )
     
     
-        predictions = classifier.predict(test_x)
+    predictions = classifier.predict(test_x)
 
-        #convert predictions to labels and compute stats 
-        predicted_labels = np.round(predictions)
-        print(sklearn.metrics.classification_report(test_y, predicted_labels, 
+    #convert predictions to labels and compute stats 
+    predicted_labels = np.round(predictions)
+    print(sklearn.metrics.classification_report(test_y, predicted_labels, 
                                                 target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
     
     #classifier.save_weights('my_models/i2b2_ner/oversampled_weights')

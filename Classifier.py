@@ -101,7 +101,7 @@ class Classifier(ABC):
         return language_model
 
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -124,6 +124,10 @@ class Classifier(ABC):
         
         # set up callbacks
         callbacks = []
+        if test_data is not None:
+            if len(test_data) != 2:
+                raise Exception("Error: test_data should be a tuple of (test_x, test_y)")
+            callbacks.append(OutputTestSetPerformanceCallback(self, test_data[0], test_data[1]))
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
