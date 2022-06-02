@@ -101,7 +101,7 @@ class Classifier(ABC):
         return language_model
 
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_data_generator=None, validation_data_generator=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -114,13 +114,16 @@ class Classifier(ABC):
                 report performance on the validation data
         :param: epochs: the number of epochs to train for
         '''
+
+        # create the training data generator unless a special one was passed in
+        if training_data_generator is None:
+            #create a DataGenerator from the training data
+            training_data_generator = DataGenerator(x, y, batch_size, self)
         
-        #create a DataGenerator from the training data
-        training_data = DataGenerator(x, y, batch_size, self)
-        
-        # generate the validation data (if it exists)
+        # create the validation data generator if there is validation data
         if validation_data is not None:
-            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
+            if validation_data_generator is None:
+                validation_data_generator = DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
         
         # set up callbacks
         callbacks = []
@@ -152,9 +155,9 @@ class Classifier(ABC):
             
         # fit the model to the training data
         self.model.fit(
-            training_data,
+            training_data_generator,
             epochs=epochs,
-            validation_data=validation_data,
+            validation_data=validation_data_generator,
             class_weight=class_weights,
             verbose=2,
             callbacks=callbacks
