@@ -7,10 +7,7 @@ import tensorflow as tf
 
 #TODO - add metrics from jack's code for token classification here and in his classifier
 
-#TODO - I hate this code, its a mess. maybe break up into functional and not?
-# --- you can't pass object methods into keras because self counts as the first positional argument
-
-
+#Note: I hate this code, its a mess, but you can't pass object methods into keras because self counts as the first positional argument. So, I think this is the best I can do for now
 #Note: Remember that the metrics are averaged over each batch, so the reported precision, recall, F1 may be different than if it is calculated over the entire dataset at once. The results reported here tend to be lower than the actual scores (from my limited observation). 
 
 class MyTextClassificationMetrics:
