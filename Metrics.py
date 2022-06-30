@@ -3,7 +3,7 @@ Examples of custom metrics
 '''
 
 import tensorflow as tf
-
+import tf.keras.backend as K
 
 #TODO - add metrics from jack's code for token classification here and in his classifier
 
