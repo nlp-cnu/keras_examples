@@ -101,7 +101,7 @@ class Classifier(ABC):
         return language_model
 
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_data_generator=None, validation_data_generator=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -114,16 +114,23 @@ class Classifier(ABC):
                 report performance on the validation data
         :param: epochs: the number of epochs to train for
         '''
+
+        # create the training data generator unless a special one was passed in
+        if training_data_generator is None:
+            #create a DataGenerator from the training data
+            training_data_generator = DataGenerator(x, y, batch_size, self)
         
-        #create a DataGenerator from the training data
-        training_data = DataGenerator(x, y, batch_size, self)
-        
-        # generate the validation data (if it exists)
+        # create the validation data generator if there is validation data
         if validation_data is not None:
-            validation_data = DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
+            if validation_data_generator is None:
+                validation_data_generator = DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
         
         # set up callbacks
         callbacks = []
+        if test_data is not None:
+            if len(test_data) != 2:
+                raise Exception("Error: test_data should be a tuple of (test_x, test_y)")
+            callbacks.append(OutputTestSetPerformanceCallback(self, test_data[0], test_data[1]))
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
@@ -148,9 +155,9 @@ class Classifier(ABC):
             
         # fit the model to the training data
         self.model.fit(
-            training_data,
+            training_data_generator,
             epochs=epochs,
-            validation_data=validation_data,
+            validation_data=validation_data_generator,
             class_weight=class_weights,
             verbose=2,
             callbacks=callbacks
@@ -373,7 +380,7 @@ class MultiLabel_Text_Classifier(Classifier):
 
 class i2b2_Relex_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         
         # set instance attributes
@@ -393,6 +400,11 @@ class i2b2_Relex_Classifier(Classifier):
         
         #create and grab the sentence embedding (the CLS token)
         sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
+
+        #TODO - experiment with noise layer --- it seems like it takes forever to train with it. What is going on?
+        if noise_rate > 0:
+            noise_layer = tf.keras.layers.GaussianNoise(0.1)
+            sentence_representation = noise_layer(sentence_representation)
   
         #now, create some dense layers
         #dense 1
