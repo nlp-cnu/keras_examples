@@ -69,7 +69,7 @@ def run_complex_example():
                      validation_data=(val_x, val_y),
                      epochs=max_epoch,
                      batch_size=batch_size,
-                     mode_out_file_name=model_out_file_name,
+                     model_out_file_name=model_out_file_name,
                      early_stopping_patience=5, early_stopping_monitor=early_stopping_monitor,
                      class_weights = data.get_train_class_weights()
     )
@@ -280,7 +280,7 @@ def run_essays_dataset():
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
                      batch_size=batch_size,
-                     #mode_out_file_name=model_out_file_name,
+                     #model_out_file_name=model_out_file_name,
                      early_stopping_patience=early_stopping_patience,
                      early_stopping_monitor=early_stopping_monitor,
                      class_weights = data.get_train_class_weights(),
@@ -341,7 +341,58 @@ def run_i2b2_dataset():
     #classifier.save_weights('my_models/i2b2_ner/oversampled_weights')
 
 
+# Simple example to test multilabel text classification datasets
+def run_n2c2_dataset():
 
+    #hard code the optimal hyperparameters
+    max_epoch = 100
+    dropout_rate = 0.2
+    language_model_trainable = True
+    learning_rate = 1e-5
+    batch_size = 20
+    language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
+    #language_model_name = Classifier.BASEBERT
+    num_classes = 8
+    training_data_filepath = '../data/kelsey_data/zaatraining_20180910_5xxxx'
+    training_labels_filepath = '../data/kelsey_data/zaatraining_20180910yyyy'
+    #test_data_filepath = '../data/i2b2_relex/test_concept_filter.tsv'
+    
+
+    #load the training data and train the model (no validation data)
+    training_data = n2c2RelexDataset(training_data_filepath, training_labels_filepath, validation_set_size=0.1)
+    #training_data.balance_dataset()
+
+    train_x, train_y = training_data.get_train_data()
+    val_x, val_y = training_data.get_validation_data()
+
+    #load the test data and make predictions
+    #test_data = i2b2RelexDataset(test_data_filepath)
+    #test_x, test_y = test_data.get_train_data()
+    
+
+    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    classifier.train(train_x, train_y,
+                     epochs=max_epoch,
+                     batch_size=batch_size,
+                     validation_data=(val_x, val_y),
+                     early_stopping_patience = 5,
+                     early_stopping_monitor = 'val_micro_F1'
+                     #test_data = (test_x, test_y)
+    )
+    
+    
+    #predictions = classifier.predict(test_x)
+
+    #convert predictions to labels and compute stats 
+    #predicted_labels = np.round(predictions)
+    #print(sklearn.metrics.classification_report(test_y, predicted_labels, 
+    #                                            target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
+    
+    classifier.save_weights('my_models/n2c2_relex/oversampled_weights')
+
+
+
+    
 def few_shot_learning():
 
     #hard code the optimal hyperparameters
@@ -442,5 +493,7 @@ if __name__ == '__main__':
     #run_essays_dataset()
     #run_i2b2_dataset()
     #replicate_i2b2_relex_results()
-    few_shot_learning()
+    #few_shot_learning()
+
+    run_n2c2_dataset()
     
