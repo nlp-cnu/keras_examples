@@ -360,8 +360,9 @@ def run_n2c2_dataset():
 
     #load the training data and train the model (no validation data)
     training_data = n2c2RelexDataset(training_data_filepath, training_labels_filepath, validation_set_size=0.1)
-    #training_data.balance_dataset()
-
+    training_data.balance_dataset(7000)
+    
+    
     train_x, train_y = training_data.get_train_data()
     val_x, val_y = training_data.get_validation_data()
 

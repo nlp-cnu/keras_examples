@@ -163,7 +163,7 @@ class Dataset(ABC):
             for sample in new_data_list[class_num]:
                 self._train_X.append(sample)
             # add the labels (labels are a numpy array)
-            if new_labels[class_num].size == 0: #only add classes that were oversampled
+            if new_labels_list[class_num].size != 0: #only add classes that were oversampled
                 self._train_Y = np.concatenate((self._train_Y, new_labels_list[class_num]), axis=0)
         print("class_counts after over_sampling = ", np.sum(self._train_Y, axis=0))        
 
