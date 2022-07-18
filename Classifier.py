@@ -57,17 +57,18 @@ class Classifier(ABC):
     BIODISCHARGE_SUMMARY_BERT = './models/biobert_pretrain_output_disch_100000'
     
     #some default parameter values
-    EPOCHS = 50
+    EPOCHS = 100
     BATCH_SIZE = 20
     MAX_LENGTH = 512
     #Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
     #      For BERT its 512
-    LEARNING_RATE = 0.01
+    LEARNING_RATE = 1e-5
     DROPOUT_RATE = 0.8
+    LANGUAGE_MODEL_TRAINABLE = True
     MODEL_OUT_FILE_NAME = ''
     
     @abstractmethod
-    def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
+    def __init__(self, language_model_name, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
         '''
         Initializer for a language model. This class should be extended, and
         the model should be built in the constructor. This constructor does
@@ -198,7 +199,7 @@ class Classifier(ABC):
 
 class Binary_Text_Classifier(Classifier):
     
-    def __init__(self, language_model_name, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         #create the language model
         language_model = self.load_language_model()
@@ -277,7 +278,7 @@ class Binary_Text_Classifier(Classifier):
         
 class MultiLabel_Text_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
         '''
         This is identical to the Binary_Text_Classifier, except the last layer uses
@@ -380,7 +381,7 @@ class MultiLabel_Text_Classifier(Classifier):
 
 class i2b2_Relex_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         
         # set instance attributes
@@ -448,7 +449,7 @@ class i2b2_Relex_Classifier(Classifier):
 
 class n2c2_Relex_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         
         # set instance attributes
@@ -518,7 +519,7 @@ class n2c2_Relex_Classifier(Classifier):
 
 
 class MultiClass_Text_Classifier(Classifier):
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
         '''
         This is identical to the MultiLabel_Text_Classifier, except the last layer uses
@@ -579,7 +580,7 @@ class MultiClass_Text_Classifier(Classifier):
 
 class MultiClass_Token_Classifier(Classifier):
     
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This is identical to the multi-label token classifier, 
         except the last layer is a softmax, and the loss function is categorical cross entropy
