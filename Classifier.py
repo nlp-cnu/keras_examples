@@ -446,6 +446,74 @@ class i2b2_Relex_Classifier(Classifier):
 
 
 
+class n2c2_Relex_Classifier(Classifier):
+
+    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        
+        # set instance attributes
+        self._num_classes = num_classes
+
+        #physical_devices = tf.config.list_physical_devices('GPU')
+        #print (physical_devices)
+        
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
+ 
+        # create the language model
+        language_model = self.load_language_model()
+        
+        #create and grab the sentence embedding (the CLS token)
+        sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
+
+        #TODO - experiment with noise layer --- it seems like it takes forever to train with it. What is going on?
+        if noise_rate > 0:
+            noise_layer = tf.keras.layers.GaussianNoise(0.1)
+            sentence_representation = noise_layer(sentence_representation)
+  
+        #now, create some dense layers
+        #dense 1
+        dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        output1 = dropout1(dense1(sentence_representation))
+    
+        #dense 2
+        dense2 = tf.keras.layers.Dense(128, activation='gelu')
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
+        output2 = dropout2(dense2(output1))
+
+        #dense 3
+        dense3 = tf.keras.layers.Dense(64, activation='gelu')
+        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
+        output3 = dropout3(dense3(output2))
+
+        #softmax
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
+        final_output = sigmoid_layer(output3)
+    
+        #combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+        
+        #create the optimizer
+        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+
+        # create the merics
+        #from Metrics import MyMetrics
+        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
+        
+        #compile the model
+        self.model.compile(
+            optimizer=optimizer,
+            loss='categorical_crossentropy',
+            metrics=metrics
+        )
+
+
+
 class MultiClass_Text_Classifier(Classifier):
     def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         

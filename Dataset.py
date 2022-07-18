@@ -240,7 +240,7 @@ class Dataset(ABC):
         
         num_samples_to_remove = class_count - max_num_samples
         # remove non-repeating indexes
-        indexes_to_remove = np.random.choice(class_count, num_samples_to_remove, replace=False)
+        indexes_to_remove = np.random.choice(int(class_count), int(num_samples_to_remove), replace=False)
         samples_to_remove = class_sample_indexes[indexes_to_remove]
 
         new_data = np.delete(data, samples_to_remove)
@@ -270,7 +270,7 @@ class Dataset(ABC):
         #  class_samples list.
         num_new_samples = goal_num_samples - num_class_samples
         # select (possibly repeating) indexes
-        indexes_to_select = np.random.randint(num_class_samples, size=num_new_samples)
+        indexes_to_select = np.random.randint(num_class_samples, size=int(num_new_samples))
         samples_to_select = class_sample_indexes[indexes_to_select]
 
         return np.array(data)[samples_to_select], labels[samples_to_select]
@@ -629,6 +629,77 @@ class n2c2RelexDataset(MultiLabel_Text_Classification_Dataset):
         return pd.DataFrame.from_dict(dfx), pd.DataFrame.from_dict(dfy)
 
 
+
+class n2c2RelexDataset_multiclass(Dataset):
+    def __init__(self, data_file_path, labels_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
+        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
+        # load the labels
+
+        # May want to reformat my converter to have a header line and separate each individual relationship value with a tab
+        # For example, first line = sentence\tPIP\tTeRP\tTaRP\t etc....
+        # basic line would look like this: sentence\t0\t0\t0\t0\t0\t1\t0\t1
+        # MAY NEED TO GET RID OF THIS IF STATEMENT AND ITS CODE
+        # if (text_column_name is None or label_column_name is None):
+        #     text_column_name = 'text'
+        #     label_column_name = 'label'
+        #     df = pd.read_csv(data_file_path, header=None, names=[text_column_name, label_column_name],
+        #                      delimiter='\t').dropna()
+        # else:
+
+        # You can either dropna, or fill na with "", I prefer fillna("")
+        dfx, dfy = self.make_dataframe(data_file_path, labels_file_path)
+        data = [' '.join(row).replace('\n','') for row in dfx.values.tolist()]
+        labels = dfy.to_numpy()# **** Needs to be a 2d list, list of lists containing 8 0's or 1's indicating relation *****
+        
+        # add a none column
+        is_none = np.sum(labels, axis=1) == 0
+        #is_none = np.sum(labels, axis = 1)
+        
+        n,d = labels.shape
+        labels_with_none  = np.ones([n, d+1]) 
+        labels_with_none[:,:-1] = labels
+        labels_with_none[:,-1] = is_none
+        
+        
+
+        # These two calls must be made at the end of creating a dataset
+        self._training_validation_split(data, labels_with_none)
+
+        
+    def make_dataframe(self, data_file_path, labels_file_path):
+        with open(data_file_path, 'r') as xfile:
+
+            reader = csv.reader(xfile, delimiter='|', lineterminator='^')
+            dfx = {'ContentBefore':[], 'Entity1':[], 'ContentBetween':[], 'Entity2':[], 'ContentAfter':[]}
+            count = 0 #count is used to make the for loop skip the first line (which is a string)
+            for row in reader:
+                if count != 0:
+                    dfx.get('ContentBefore').append(row[0])
+                    dfx.get('Entity1').append(row[1])
+                    dfx.get('ContentBetween').append(row[2])
+                    dfx.get('Entity2').append(row[3])
+                    dfx.get('ContentAfter').append(row[4])
+                count +=1
+        with open(labels_file_path, 'r') as yfile:
+            reader = csv.reader(yfile, delimiter='|', lineterminator='^',
+                                quoting=csv.QUOTE_NONE)
+            dfy = {'Strength-Drug':[],'Form-Drug':[],'Dosage-Drug':[],'Duration-Drug':[],'Frequency-Drug':[],'Route-Drug':[],'ADE-Drug':[],'Reason-Drug':[]}
+            count = 0 #count is used to make the for loop skip the first line (which is a string)
+            for row in reader:
+                if count != 0:
+                    dfy.get('Strength-Drug').append(float(row[0]))
+                    dfy.get('Form-Drug').append(float(row[1]))
+                    dfy.get('Dosage-Drug').append(float(row[2]))
+                    dfy.get('Duration-Drug').append(float(row[3]))
+                    dfy.get('Frequency-Drug').append(float(row[4]))
+                    dfy.get('Route-Drug').append(float(row[5]))
+                    dfy.get('ADE-Drug').append(float(row[6]))
+                    dfy.get('Reason-Drug').append(float(row[7]))
+                count += 1
+
+        return pd.DataFrame.from_dict(dfx), pd.DataFrame.from_dict(dfy)
+
+    
         
 class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0, shuffle_data=True):
