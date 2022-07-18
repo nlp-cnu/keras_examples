@@ -583,8 +583,7 @@ class n2c2RelexDataset(MultiLabel_Text_Classification_Dataset):
         dfx, dfy = self.make_dataframe(data_file_path, labels_file_path)
         labels = dfy.to_numpy()# **** Needs to be a 2d list, list of lists containing 8 0's or 1's indicating relation *****
         data = [' '.join(row).replace('\n','') for row in dfx.values.tolist()]
-        print(data)
-        print(labels)
+
         # load the data
         # Needs to be a list of the sentences
 

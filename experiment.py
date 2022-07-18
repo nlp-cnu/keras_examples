@@ -384,7 +384,7 @@ def run_n2c2_dataset_multilabel():
 def run_n2c2_dataset_multiclass():
 
     #hard code the optimal hyperparameters
-    max_epoch = 100
+    max_epoch = 1
     dropout_rate = 0.2
     language_model_trainable = True
     learning_rate = 1e-5
@@ -417,11 +417,16 @@ def run_n2c2_dataset_multiclass():
                      early_stopping_monitor = 'val_micro_F1'
                      #test_data = (test_x, test_y)
     )
-    predictions = classifier.predict(train_x)
+    classifier.save_weights("my_models/temp_weights")
+    #classifier.load_weights("my_models/temp_weights")
 
-    #convert predictions to labels and compute stats 
-    predicted_labels = np.round(predictions)
-    print(sklearn.metrics.classification_report(test_y, predicted_labels, 
+    #make predictions 
+    predictions = classifier.predict(train_x)
+    #predicted_labels = np.round(predictions)
+    predicted_labels = np.identity(num_classes)[np.argmax(predictions, axis=1)]
+    print ("predicted_labels.shape = ", predicted_labels.shape)
+    print (predicted_labels)
+    print(sklearn.metrics.classification_report(train_y, predicted_labels, 
                                                 target_names=['Strength-Drug', 'Form-Drug', 'Dosage-Drug', 'Duration-Drug', 'Frequency-Drug', 'Route-Drug', 'ADE-Drug', 'Reason-Drug', 'None']))
     
     classifier.save_weights('my_models/n2c2_relex/oversampled_weights')

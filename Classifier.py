@@ -469,31 +469,34 @@ class n2c2_Relex_Classifier(Classifier):
         #create and grab the sentence embedding (the CLS token)
         sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
 
-        #TODO - experiment with noise layer --- it seems like it takes forever to train with it. What is going on?
-        if noise_rate > 0:
-            noise_layer = tf.keras.layers.GaussianNoise(0.1)
-            sentence_representation = noise_layer(sentence_representation)
+        #if noise_rate > 0:
+        #    noise_layer = tf.keras.layers.GaussianNoise(0.1)
+        #    sentence_representation = noise_layer(sentence_representation)
   
         #now, create some dense layers
         #dense 1
-        dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(sentence_representation))
+        #dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        #dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        #output1 = dropout1(dense1(sentence_representation))
     
         #dense 2
-        dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
-        output2 = dropout2(dense2(output1))
+        #dense2 = tf.keras.layers.Dense(128, activation='gelu')
+        #dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
+        #output2 = dropout2(dense2(output1))
 
         #dense 3
-        dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
-        output3 = dropout3(dense3(output2))
+        #dense3 = tf.keras.layers.Dense(64, activation='gelu')
+        #dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
+        #output3 = dropout3(dense3(output2))
 
         #softmax
-        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
-        final_output = sigmoid_layer(output3)
+        #sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
+        #final_output = sigmoid_layer(output3)
+
+        softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
+        final_output = softmax_layer(sentence_representation)
     
+        
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
         
