@@ -199,7 +199,7 @@ class Classifier(ABC):
 
 class Binary_Text_Classifier(Classifier):
     
-    def __init__(self, language_model_name, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         #create the language model
         language_model = self.load_language_model()
@@ -278,7 +278,7 @@ class Binary_Text_Classifier(Classifier):
         
 class MultiLabel_Text_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
         '''
         This is identical to the Binary_Text_Classifier, except the last layer uses
@@ -354,8 +354,7 @@ class MultiLabel_Text_Classifier(Classifier):
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
 
         # create the merics
-        #from Metrics import MyMetrics
-        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        my_metrics = MyMultiLabelTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
         
         #compile the model
@@ -381,7 +380,7 @@ class MultiLabel_Text_Classifier(Classifier):
 
 class i2b2_Relex_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         
         # set instance attributes
@@ -434,8 +433,7 @@ class i2b2_Relex_Classifier(Classifier):
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
 
         # create the merics
-        #from Metrics import MyMetrics
-        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        my_metrics = MyMultiLabelTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
         
         #compile the model
@@ -449,7 +447,7 @@ class i2b2_Relex_Classifier(Classifier):
 
 class n2c2_Relex_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         
         # set instance attributes
@@ -467,38 +465,14 @@ class n2c2_Relex_Classifier(Classifier):
         # create the language model
         language_model = self.load_language_model()
         
-        #create and grab the sentence embedding (the CLS token)
+        # create and grab the sentence embedding (the CLS token)
         sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
 
-        #if noise_rate > 0:
-        #    noise_layer = tf.keras.layers.GaussianNoise(0.1)
-        #    sentence_representation = noise_layer(sentence_representation)
-  
-        #now, create some dense layers
-        #dense 1
-        #dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        #dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        #output1 = dropout1(dense1(sentence_representation))
-    
-        #dense 2
-        #dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        #dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
-        #output2 = dropout2(dense2(output1))
-
-        #dense 3
-        #dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        #dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
-        #output3 = dropout3(dense3(output2))
-
-        #softmax
-        #sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
-        #final_output = sigmoid_layer(output3)
-
+        # add the output layer
         softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
         final_output = softmax_layer(sentence_representation)
     
-        
-        #combine the language model with the classificaiton part
+        # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
         
         #create the optimizer
@@ -506,7 +480,7 @@ class n2c2_Relex_Classifier(Classifier):
 
         # create the merics
         #from Metrics import MyMetrics
-        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        my_metrics = MyMultiClassTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
         
         #compile the model
@@ -519,7 +493,7 @@ class n2c2_Relex_Classifier(Classifier):
 
 
 class MultiClass_Text_Classifier(Classifier):
-    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
         '''
         This is identical to the MultiLabel_Text_Classifier, except the last layer uses
@@ -580,7 +554,7 @@ class MultiClass_Text_Classifier(Classifier):
 
 class MultiClass_Token_Classifier(Classifier):
     
-    def __init__(self, language_model_name, num_classes, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This is identical to the multi-label token classifier, 
         except the last layer is a softmax, and the loss function is categorical cross entropy
