@@ -83,7 +83,7 @@ def run_complex_example():
 # Simple example to test binary text classification datasets
 def run_binary_text_classification_dataset():
     #load the dataset
-    data_filepath = '../data/ade_tweets/text_classification_dataset.tsv'
+    data_filepath = '../data/ade_tweets/ade_tweets.tsv'
     data = Binary_Text_Classification_Dataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a binary text classifier
@@ -536,4 +536,5 @@ if __name__ == '__main__':
     #few_shot_learning()
 
     run_n2c2_dataset_multiclass()
-    
+
+    #run_binary_text_classification_dataset()

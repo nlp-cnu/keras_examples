@@ -537,13 +537,14 @@ class MultiClass_Text_Classifier(Classifier):
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
 
         # set up the metrics
-        #TODO - do metrics like multi-label
+        my_metrics = MyMultiClassTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
         
         #compile the model
         self.model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
-            metrics=['accuracy']
+            metrics=metrics
         )
 
 
