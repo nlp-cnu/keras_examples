@@ -1,0 +1,10 @@
+text	class_1	class_2	class_3
+I am class 1	1	0	0
+I am class 2	0	1	0
+I am class 3	0	0	1
+Her's some stuff	1	0	0
+More stuff	1	0	0
+Even more stuff to classify	0	1	0
+And let's keep going	0	1	0
+Just two more to go	0	0	1
+And here's the last one	0	0	1
