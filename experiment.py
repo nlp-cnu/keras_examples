@@ -30,7 +30,11 @@ def run_complex_example():
     data_filepath = '../data/interview_eval/essays.csv'
     num_classes = 5
     data = Essays_Dataset(data_filepath, validation_set_size=0.2)
-
+    
+    # split into test and training
+    #TODO - add a test/train split method. Why's it so hard to do right now?
+    
+    
     #create classifier and load data for a multilabel text classifier
     classifier = MultiLabel_Text_Classifier(language_model_name, num_classes,
                                             max_length=max_length,
@@ -70,6 +74,12 @@ def run_complex_example():
                      class_weights = data.get_train_class_weights()
     )
 
+    # make predictions #TODO - make for test
+    predictions = classifier.predict(val_x)
+    predicted_labels = np.round(predictions)
+    print(sklearn.metrics.classification_report(val_y, predicted_labels,
+                                                target_names=['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5']))
+
 
 # Simple example to test binary text classification datasets
 def run_binary_text_classification_dataset():
@@ -96,7 +106,7 @@ def run_binary_text_classification_dataset():
     #predict and evaluate
     predictions = classifier.predict(val_x)
     predicted_labels = np.round(predictions)
-    print(sklearn.metrics.classification_report(val_y, predicted_labels, target_names=['ADE', 'No ADE'])
+    print(sklearn.metrics.classification_report(val_y, predicted_labels, target_names=['ADE', 'No ADE']))
 
     
 # Simple example to test multilabel text classification datasets
@@ -124,7 +134,7 @@ def run_multilabel_text_classification_dataset():
     predictions = classifier.predict(val_x)
     predicted_labels = np.round(predictions)
     print(sklearn.metrics.classification_report(val_y, predicted_labels,
-                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP'])
+                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
 
 
           
@@ -150,10 +160,11 @@ def run_multiclass_text_classification_dataset():
                      validation_data=(val_x, val_y),
     )
 
+    #predict and evaluate
     predictions = classifier.predict(val_x)
     predicted_labels = np.identity(num_classes)[np.argmax(y_pred, axis=1)]
     print(sklearn.metrics.classification_report(val_y, predicted_labels,
-                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP'])
+                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
           
           
 
@@ -188,8 +199,8 @@ def run_multiclass_token_classification_dataset():
 if __name__ == '__main__':
 
     #run_complex_example()
-    #run_binary_text_classification_dataset()
+    run_binary_text_classification_dataset()
     #run_multilabel_text_classification_dataset()
     #run_multiclass_text_classification_dataset()
-    run_multilabel_token_classification_dataset()
+    #run_multilabel_token_classification_dataset()
     
