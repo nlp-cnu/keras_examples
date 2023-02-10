@@ -1,5 +1,6 @@
 from Classifier import *
 from Dataset import *
+import sklearn
 
 # script to replicate i2b2 relex results from Max's Thesis
 def replicate_i2b2_relex_results():

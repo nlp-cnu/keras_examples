@@ -1,5 +1,6 @@
 from Classifier import *
 from Dataset import *
+import sklearn
 
 # Example to show and debug all implemented features
 def run_complex_example():
@@ -87,11 +88,15 @@ def run_binary_text_classification_dataset():
     val_x, val_y = data.get_validation_data()
 
     #train the model
-    # If you want to save model weights, use below.
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
                      class_weights = data.get_train_class_weights()
     )
+
+    #predict and evaluate
+    predictions = classifier.predict(val_x)
+    predicted_labels = np.round(predictions)
+    print(sklearn.metrics.classification_report(val_y, predicted_labels, target_names=['ADE', 'No ADE'])
 
     
 # Simple example to test multilabel text classification datasets
@@ -115,8 +120,18 @@ def run_multilabel_text_classification_dataset():
                      class_weights = data.get_train_class_weights()
     )
 
+    #predict and evaluate
+    predictions = classifier.predict(val_x)
+    predicted_labels = np.round(predictions)
+    print(sklearn.metrics.classification_report(val_y, predicted_labels,
+                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP'])
+
+
+          
+
 # Simple example to test multiclass text classification datasets
 def run_multiclass_text_classification_dataset():
+    #TODO - test this on a dataset that is actually multiclass rather than multilabel
     #load the dataset
     data_filepath = '../data/i2b2_relex/i2b2_converted.tsv'
     data = MultiLabel_Text_Classification_Dataset(data_filepath, validation_set_size=0.2)
@@ -135,6 +150,12 @@ def run_multiclass_text_classification_dataset():
                      validation_data=(val_x, val_y),
     )
 
+    predictions = classifier.predict(val_x)
+    predicted_labels = np.identity(num_classes)[np.argmax(y_pred, axis=1)]
+    print(sklearn.metrics.classification_report(val_y, predicted_labels,
+                                                target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP'])
+          
+          
 
 # Simple example to test multiclass token classification datasets
 def run_multiclass_token_classification_dataset(): 
@@ -159,6 +180,7 @@ def run_multiclass_token_classification_dataset():
 
     #TODO - add evaluation portion for predict
 
+          
 
     
 
