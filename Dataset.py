@@ -279,7 +279,7 @@ class Dataset(ABC):
 
         
 #TODO - this is based on Max's code and has some hardcoded values - make it more generic
-class MultiLabel_Text_Classification_Dataset(Dataset):
+class MultiLabelTextClassificationDataset(Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         # load the labels
@@ -330,7 +330,7 @@ class MultiLabel_Text_Classification_Dataset(Dataset):
             
 
 #Loads data in which there is a single (categorical) label column (e.g. class 0 = 0, class 2 = 2)
-class MultiClass_Text_Classification_Dataset(Dataset):
+class MultiClassTextClassification_Dataset(Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         #load the labels
@@ -372,7 +372,7 @@ class MultiClass_Text_Classification_Dataset(Dataset):
         
     
 #Load a data and labels for a text classification dataset
-class Binary_Text_Classification_Dataset(Dataset):
+class BinaryTextClassification_Dataset(Dataset):
     '''
     Class to load and store a text classification dataset. Text classification datasets
     contain text and a label for the text, and possibly other information. Columns
@@ -456,7 +456,7 @@ class Binary_Text_Classification_Dataset(Dataset):
 # TODO -- This will work for multi-class problems, and I think it works for multi-label problems
 # TODO - this currently uses hard-coded values so its functionality is limited. It serves as a template though
 # TODO -- may need to expand for different format types. Right now it is for span start and span end format types
-class Token_Classification_Dataset(Dataset):
+class TokenClassificationDataset(Dataset):
     def __init__(self, data_file_path, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
 
@@ -515,7 +515,7 @@ class Token_Classification_Dataset(Dataset):
             self.class_weights[i]=val
 
 
-class My_Personality_Dataset(MultiLabel_Text_Classification_Dataset):
+class MyPersonalityDataset(MultiLabelTextClassificationDataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
@@ -539,7 +539,7 @@ class My_Personality_Dataset(MultiLabel_Text_Classification_Dataset):
         self._determine_class_weights()
 
 
-class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
+class EssaysDataset(MultiLabelTextClassificationDataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
@@ -563,7 +563,7 @@ class Essays_Dataset(MultiLabel_Text_Classification_Dataset):
         self._determine_class_weights()
 
 
-class n2c2RelexDataset(MultiLabel_Text_Classification_Dataset):
+class n2c2RelexDataset(MultiLabelTextClassificationDataset):
     def __init__(self, data_file_path, labels_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         # load the labels
@@ -700,7 +700,7 @@ class n2c2RelexDataset_multiclass(Dataset):
 
     
         
-class i2b2RelexDataset(MultiLabel_Text_Classification_Dataset):
+class i2b2RelexDataset(MultiLabelTextClassificationDataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0, shuffle_data=True):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
         
