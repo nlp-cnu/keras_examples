@@ -21,7 +21,7 @@ def replicate_i2b2_relex_results():
     max_epoch = 20
     training_data = i2b2RelexDataset(training_data_filepath)
     train_x, train_y = training_data.get_train_data()
-    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    classifier = i2b2RelexClassifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
     classifier.train(train_x, train_y,
                      epochs=max_epoch,
                      batch_size=batch_size,
@@ -70,10 +70,10 @@ def run_essays_dataset():
     #load the dataset
     data_filepath = '../data/interview_eval/essays.csv'
     num_classes = 5
-    data = Essays_Dataset(data_filepath, validation_set_size=0.2)
+    data = EssaysDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
-    classifier = MultiLabel_Text_Classifier(language_model_name, num_classes,
+    classifier = MultiLabelTextClassifier(language_model_name, num_classes,
                                             max_length=max_length,
                                             learning_rate=learning_rate,
                                             language_model_trainable=language_model_trainable,
@@ -127,7 +127,7 @@ def run_i2b2_dataset():
     test_x, test_y = test_data.get_train_data()
     
 
-    classifier = i2b2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    classifier = i2b2RelexClassifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
     classifier.train(train_x, train_y,
                      epochs=max_epoch,
                      batch_size=batch_size,
@@ -176,7 +176,7 @@ def run_n2c2_dataset_multilabel():
     #test_x, test_y = test_data.get_train_data()
     
 
-    classifier = n2c2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    classifier = n2c2RelexClassifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
     classifier.train(train_x, train_y,
                      epochs=max_epoch,
                      batch_size=batch_size,
@@ -215,7 +215,7 @@ def run_n2c2_dataset_multiclass():
     #test_x, test_y = test_data.get_train_data()
     
 
-    classifier = n2c2_Relex_Classifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
+    classifier = n2c2RelexClassifier(language_model_name, num_classes, dropout_rate=dropout_rate, language_model_trainable=language_model_trainable, learning_rate=learning_rate)
     classifier.train(train_x, train_y,
                      epochs=max_epoch,
                      batch_size=batch_size,

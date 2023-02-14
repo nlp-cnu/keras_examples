@@ -29,14 +29,14 @@ def run_complex_example():
     #load the dataset
     data_filepath = '../data/interview_eval/essays.csv'
     num_classes = 5
-    data = Essays_Dataset(data_filepath, validation_set_size=0.2)
+    data = EssaysDataset(data_filepath, validation_set_size=0.2)
     
     # split into test and training
     #TODO - add a test/train split method. Why's it so hard to do right now?
     
     
     #create classifier and load data for a multilabel text classifier
-    classifier = MultiLabel_Text_Classifier(language_model_name, num_classes,
+    classifier = MultiLabelTextClassifier(language_model_name, num_classes,
                                             max_length=max_length,
                                             learning_rate=learning_rate,
                                             language_model_trainable=language_model_trainable,
@@ -85,13 +85,13 @@ def run_complex_example():
 def run_binary_text_classification_dataset():
     #load the dataset
     data_filepath = '../data/ade_tweets/ade_tweets.tsv'
-    data = Binary_Text_Classification_Dataset(data_filepath, validation_set_size=0.2)
+    data = BinaryTextClassification_Dataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a binary text classifier
     language_model_name = Classifier.ROBERTA_TWITTER
     num_classes = 8
     max_length = 768
-    classifier = Binary_Text_Classifier(language_model_name, max_length=max_length)
+    classifier = BinaryTextClassifier(language_model_name, max_length=max_length)
     
     #get the training data
     train_x, train_y = data.get_train_data()
@@ -113,12 +113,12 @@ def run_binary_text_classification_dataset():
 def run_multilabel_text_classification_dataset():
     #load the dataset
     data_filepath = '../data/i2b2_relex/i2b2_converted.tsv'
-    data = MultiLabel_Text_Classification_Dataset(data_filepath, validation_set_size=0.2)
+    data = MultiLabelTextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
     num_classes = 8
-    classifier = MultiLabel_Text_Classifier(language_model_name, num_classes)
+    classifier = MultiLabelTextClassifier(language_model_name, num_classes)
     
     #get the training data
     train_x, train_y = data.get_train_data()
@@ -144,12 +144,12 @@ def run_multiclass_text_classification_dataset():
     #TODO - test this on a dataset that is actually multiclass rather than multilabel
     #load the dataset
     data_filepath = '../data/i2b2_relex/i2b2_converted.tsv'
-    data = MultiLabel_Text_Classification_Dataset(data_filepath, validation_set_size=0.2)
+    data = MultiLabelTextClassification_Dataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
     num_classes = 8
-    classifier = MultiClass_Text_Classifier(language_model_name, num_classes)
+    classifier = MultiClassTextClassifier(language_model_name, num_classes)
     
     #get the training data
     train_x, train_y = data.get_train_data()
@@ -172,12 +172,12 @@ def run_multiclass_text_classification_dataset():
 def run_multiclass_token_classification_dataset(): 
     #load the dataset
     data_filepath = '../data/i2b2_ner/training_data.tsv'
-    data = Token_Classification_Dataset(data_filepath, validation_set_size=0.2)
+    data = TokenClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
     language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
     num_classes = 3
-    classifier = MultiClass_Token_Classifier(language_model_name, num_classes)
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
     
     #get the training data
     train_x, train_y = data.get_train_data()
