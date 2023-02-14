@@ -76,6 +76,7 @@ class MyMultiClassTokenClassificationMetrics:
                     MyMultiClassTokenClassificationMetrics.macro_precision, MyMultiClassTokenClassificationMetrics.macro_recall, MyMultiClassTokenClassificationMetrics.macro_F1,
                     MyMultiClassTokenClassificationMetrics.micro_precision, MyMultiClassTokenClassificationMetrics.micro_recall, MyMultiClassTokenClassificationMetrics.micro_F1]
 
+        # TODO - do I need to specify the class that "precision" comes from?
         # add individual class metrics
         # there are at least 2 classes (always)
         metrics.extend([precision_c0, recall_c0, f1_c0])
