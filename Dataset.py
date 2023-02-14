@@ -10,7 +10,6 @@ import sklearn.utils
 import csv
 import sys
 
-#TODO - Should I have a default seed value here?
 SEED = 3
 
 #Abstract dataset class
@@ -453,19 +452,72 @@ class BinaryTextClassification_Dataset(Dataset):
 
             
 
-# TODO -- This will work for multi-class problems, and I think it works for multi-label problems
-# TODO - this currently uses hard-coded values so its functionality is limited. It serves as a template though
+
 # TODO -- may need to expand for different format types. Right now it is for span start and span end format types
 class TokenClassificationDataset(Dataset):
-    def __init__(self, data_file_path, seed=SEED, validation_set_size=0):
+
+    def __init__(self, data_file_path, num_classes, language_model_name, seed=SEED, test_set_size=0, max_num_tokens=512):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
+        self.num_classes = num_classes
+        tokenizer = AutoTokenizer.from_pretrained(language_model_name)
+        self.df = self.preprocess(data_file_path, tokenizer)
+
+        self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
+
+        # Need to make a big array that is ixjxnum_classes, where i is the ith token, j is the number of tokens
+        num_lost = 0
+        num_samples = len(self.df['annotation'])
+        for i in range(num_samples):
+            num_tokens = len(self.df['annotation'][i])
+            if num_tokens > max_num_tokens:
+                num_lost += num_tokens - max_num_tokens
+            for j in range(num_tokens)[:max_num_tokens]:
+                positive_class_index = self.df['annotation'][i][j]
+                self.labels[i][j][int(positive_class_index)] = 1.0
+
+        self.data = self.df["text"].tolist()
+        self._training_validation_split(self.data, self.labels)
+        #print("Number of lost tokens:", num_lost)
+
+    def preprocess(self, input_file, tokenizer):
+        # Want to grab the training data, expand all the labels using the tokenizer
+        # Shuffle the samples, save to new file that will be called during training
+        
+        # Creates new label that accounts for the tokenization of a sample
+        def tokenize_sample(sample, tokenizer):
+            new_label = []
+            tok_lengths = [len(tok) - 2 for tok in tokenizer(sample['text'].split())['input_ids']]
+
+            label = sample['annotation']
+            # this index is following the labels, but the tok_lengths index
+            # is one less because it does not account for the [CLS] and [SEP] tags
+            for i in range(len(label)):
+                l = label[i]
+                new_l = [l] * tok_lengths[i]
+                new_label.extend(new_l)
+            new_label = [0] + new_label + [0]
+            return new_label
+        
+
+        df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False, quoting=csv.QUOTE_NONE)
+        df['annotation'] = df['annotation'].apply(literal_eval)
+        df['annotation'] = df.apply(tokenize_sample, tokenizer=tokenizer, axis=1)
+
+        # See if you can just return this new dataframe, instead of saving all of this extra data
+        return df
+
+
+        
+    # Old code with hardcoded values which may be more interpretable
+    #def __init__(self, data_file_path, seed=SEED, validation_set_size=0):
+    #    Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
 
         # read in data
-        df = pd.read_csv(data_file_path, delimiter='\t', names=['text', 'problem', 'treatment', 'test'], quoting=csv.QUOTE_NONE)#.dropna()
-        df['problem'] = df.problem.apply(literal_eval)
-        df['treatment'] = df.treatment.apply(literal_eval)
-        df['test'] = df.test.apply(literal_eval)
-        data = df['text'].fillna("").tolist()
+    #    df = pd.read_csv(data_file_path, delimiter='\t', names=['text', 'problem', 'treatment', 'test'], quoting=csv.QUOTE_NONE)#.dropna()
+    #    df['problem'] = df.problem.apply(literal_eval)
+    #    df['treatment'] = df.treatment.apply(literal_eval)
+    #    df['test'] = df.test.apply(literal_eval)
+    #    data = df['text'].fillna("").tolist()
 
         # tokenize the data to generate y-values for each token
         # self.model_name = model_name
@@ -477,19 +529,19 @@ class TokenClassificationDataset(Dataset):
         #       This way because of how the data is pushed through BERT. The length of the labels
         #       must match the length of the samples. It is a lot of wasted space though
         #TOOD - max_length is hardcoded in
-        num_classes = 3
-        max_length = 512
-        labels = np.zeros([len(df['test']), max_length, num_classes])
-        for i in range(len(df['test'])):
-            num_words = len(df['test'][i])
-            for j in range(num_words):
-                labels[i][j][0] = df['problem'][i][j]
-                labels[i][j][1] = df['treatment'][i][j]
-                labels[i][j][2] = df['test'][i][j]
+        #num_classes = 3
+        #max_length = 512
+        #labels = np.zeros([len(df['test']), max_length, num_classes])
+        #for i in range(len(df['test'])):
+        #    num_words = len(df['test'][i])
+        #    for j in range(num_words):
+        #        labels[i][j][0] = df['problem'][i][j]
+        #        labels[i][j][1] = df['treatment'][i][j]
+        #        labels[i][j][2] = df['test'][i][j]
 
         # These two calls must be made at the end of creating a dataset
-        self._training_validation_split(data, labels)
-        self._determine_class_weights()
+        #self._training_validation_split(data, labels)
+        #self._determine_class_weights()
 
 
     #TODO - check this and all other with stats collected independently from the y-labels in the text files
