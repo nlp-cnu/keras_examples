@@ -74,35 +74,34 @@ class MyMultiClassTokenClassificationMetrics:
         # add macro and micro metrics
         metrics = [ MyMultiClassTokenClassificationMetrics.num_neg,
                     MyMultiClassTokenClassificationMetrics.macro_precision, MyMultiClassTokenClassificationMetrics.macro_recall, MyMultiClassTokenClassificationMetrics.macro_F1,
-                    MyMultiClassTokenClassificationMetrics.micro_precision, MyMultiClassTokenClassificationMetrics.micro_recall, MyMultiClassTokenClassificationMetrics.micro_F1]
+                    MyMultiClassTokenClassificationMetrics.micro_precision, MyMultiClassTokenClassificationMetrics.micro_recall, MyMultiClassTokenClassificationMetrics.micro_F1 ]
 
-        # TODO - do I need to specify the class that "precision" comes from?
         # add individual class metrics
         # there are at least 2 classes (always)
-        metrics.extend([precision_c0, recall_c0, f1_c0])
-        metrics.extend([precision_c1, recall_c1, f1_c1])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 2:
-            metrics.extend([precision_c2, recall_c2, f1_c2])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 3:
-            metrics.extend([precision_c3, recall_c3, f1_c3])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 4:
-            metrics.extend([precision_c4, recall_c4, f1_c4])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 5:
-            metrics.extend([precision_c5, recall_c5, f1_c5])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 6:
-            metrics.extend([precision_c6, recall_c6, f1_c6])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 7:
-            metrics.extend([precision_c7, recall_c7, f1_c7])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 8:
-            metrics.extend([precision_c8, recall_c8, f1_c8])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 9:
-            metrics.extend([precision_c9, recall_c9, f1_c9])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 10:
-            metrics.extend([precision_c10, recall_c10, f1_c10])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 11:
-            metrics.extend([precision_c11, recall_c11, f1_c11])
-        if MyMultiLabelTextClassificationMetrics.num_classes > 12:
-            metrics.extend([precision_c12, recall_c12, f1_c12])
+        metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c0, MyMultiClassTokenClassificationMetrics.recall_c0, MyMultiClassTokenClassificationMetrics.f1_c0])
+        metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c1, MyMultiClassTokenClassificationMetrics.recall_c1, MyMultiClassTokenClassificationMetrics.f1_c1])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 2:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c2, MyMultiClassTokenClassificationMetrics.recall_c2, MyMultiClassTokenClassificationMetrics.f1_c2])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 3:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c3, MyMultiClassTokenClassificationMetrics.recall_c3, MyMultiClassTokenClassificationMetrics.f1_c3])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 4:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c4, MyMultiClassTokenClassificationMetrics.recall_c4, MyMultiClassTokenClassificationMetrics.f1_c4])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 5:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c5, MyMultiClassTokenClassificationMetrics.recall_c5, MyMultiClassTokenClassificationMetrics.f1_c5])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 6:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c6, MyMultiClassTokenClassificationMetrics.recall_c6, MyMultiClassTokenClassificationMetrics.f1_c6])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 7:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c7, MyMultiClassTokenClassificationMetrics.recall_c7, MyMultiClassTokenClassificationMetrics.f1_c7])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 8:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c8, MyMultiClassTokenClassificationMetrics.recall_c8, MyMultiClassTokenClassificationMetrics.f1_c8])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 9:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c9, MyMultiClassTokenClassificationMetrics.recall_c9, MyMultiClassTokenClassificationMetrics.f1_c9])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 10:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c10, MyMultiClassTokenClassificationMetrics.recall_c10, MyMultiClassTokenClassificationMetrics.f1_c10])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 11:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c11, MyMultiClassTokenClassificationMetrics.recall_c11, MyMultiClassTokenClassificationMetrics.f1_c11])
+        if MyMultiClassTokenClassificationMetrics.num_classes > 12:
+            metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c12, MyMultiClassTokenClassificationMetrics.recall_c12, MyMultiClassTokenClassificationMetrics.f1_c12])
 
         return metrics
 
@@ -324,30 +323,30 @@ class MyMultiLabelTextClassificationMetrics:
 
         # add individual class metrics
         # there are at least 2 classes (always)
-        metrics.extend([precision_c0, recall_c0, f1_c0])
-        metrics.extend([precision_c1, recall_c1, f1_c1])
+        metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c0, MyMultiLabelTextClassificationMetrics.recall_c0, MyMultiLabelTextClassificationMetrics.f1_c0])
+        metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c1, MyMultiLabelTextClassificationMetrics.recall_c1, MyMultiLabelTextClassificationMetrics.f1_c1])
         if MyMultiLabelTextClassificationMetrics.num_classes > 2:
-            metrics.extend([precision_c2, recall_c2, f1_c2])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c2, MyMultiLabelTextClassificationMetrics.recall_c2, MyMultiLabelTextClassificationMetrics.f1_c2])
         if MyMultiLabelTextClassificationMetrics.num_classes > 3:
-            metrics.extend([precision_c3, recall_c3, f1_c3])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c3, MyMultiLabelTextClassificationMetrics.recall_c3, MyMultiLabelTextClassificationMetrics.f1_c3])
         if MyMultiLabelTextClassificationMetrics.num_classes > 4:
-            metrics.extend([precision_c4, recall_c4, f1_c4])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c4, MyMultiLabelTextClassificationMetrics.recall_c4, MyMultiLabelTextClassificationMetrics.f1_c4])
         if MyMultiLabelTextClassificationMetrics.num_classes > 5:
-            metrics.extend([precision_c5, recall_c5, f1_c5])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c5, MyMultiLabelTextClassificationMetrics.recall_c5, MyMultiLabelTextClassificationMetrics.f1_c5])
         if MyMultiLabelTextClassificationMetrics.num_classes > 6:
-            metrics.extend([precision_c6, recall_c6, f1_c6])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c6, MyMultiLabelTextClassificationMetrics.recall_c6, MyMultiLabelTextClassificationMetrics.f1_c6])
         if MyMultiLabelTextClassificationMetrics.num_classes > 7:
-            metrics.extend([precision_c7, recall_c7, f1_c7])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c7, MyMultiLabelTextClassificationMetrics.recall_c7, MyMultiLabelTextClassificationMetrics.f1_c7])
         if MyMultiLabelTextClassificationMetrics.num_classes > 8:
-            metrics.extend([precision_c8, recall_c8, f1_c8])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c8, MyMultiLabelTextClassificationMetrics.recall_c8, MyMultiLabelTextClassificationMetrics.f1_c8])
         if MyMultiLabelTextClassificationMetrics.num_classes > 9:
-            metrics.extend([precision_c9, recall_c9, f1_c9])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c9, MyMultiLabelTextClassificationMetrics.recall_c9, MyMultiLabelTextClassificationMetrics.f1_c9])
         if MyMultiLabelTextClassificationMetrics.num_classes > 10:
-            metrics.extend([precision_c10, recall_c10, f1_c10])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c10, MyMultiLabelTextClassificationMetrics.recall_c10, MyMultiLabelTextClassificationMetrics.f1_c10])
         if MyMultiLabelTextClassificationMetrics.num_classes > 11:
-            metrics.extend([precision_c11, recall_c11, f1_c11])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c11, MyMultiLabelTextClassificationMetrics.recall_c11, MyMultiLabelTextClassificationMetrics.f1_c11])
         if MyMultiLabelTextClassificationMetrics.num_classes > 12:
-            metrics.extend([precision_c12, recall_c12, f1_c12])
+            metrics.extend([MyMultiLabelTextClassificationMetrics.precision_c12, MyMultiLabelTextClassificationMetrics.recall_c12, MyMultiLabelTextClassificationMetrics.f1_c12])
 
         return metrics
 
@@ -570,30 +569,30 @@ class MyMultiClassTextClassificationMetrics:
 
         # add individual class metrics
         # there are at least 2 classes (always)
-        metrics.extend([precision_c0, recall_c0, f1_c0])
-        metrics.extend([precision_c1, recall_c1, f1_c1])
+        metrics.extend([MyMultiClassTextClassificationMetrics.precision_c0, MyMultiClassTextClassificationMetrics.recall_c0, MyMultiClassTextClassificationMetrics.f1_c0])
+        metrics.extend([MyMultiClassTextClassificationMetrics.precision_c1, MyMultiClassTextClassificationMetrics.recall_c1, MyMultiClassTextClassificationMetrics.f1_c1])
         if MyMultiClassTextClassificationMetrics.num_classes > 2:
-            metrics.extend([precision_c2, recall_c2, f1_c2])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c2, MyMultiClassTextClassificationMetrics.recall_c2, MyMultiClassTextClassificationMetrics.f1_c2])
         if MyMultiClassTextClassificationMetrics.num_classes > 3:
-            metrics.extend([precision_c3, recall_c3, f1_c3])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c3, MyMultiClassTextClassificationMetrics.recall_c3, MyMultiClassTextClassificationMetrics.f1_c3])
         if MyMultiClassTextClassificationMetrics.num_classes > 4:
-            metrics.extend([precision_c4, recall_c4, f1_c4])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c4, MyMultiClassTextClassificationMetrics.recall_c4, MyMultiClassTextClassificationMetrics.f1_c4])
         if MyMultiClassTextClassificationMetrics.num_classes > 5:
-            metrics.extend([precision_c5, recall_c5, f1_c5])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c5, MyMultiClassTextClassificationMetrics.recall_c5, MyMultiClassTextClassificationMetrics.f1_c5])
         if MyMultiClassTextClassificationMetrics.num_classes > 6:
-            metrics.extend([precision_c6, recall_c6, f1_c6])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c6, MyMultiClassTextClassificationMetrics.recall_c6, MyMultiClassTextClassificationMetrics.f1_c6])
         if MyMultiClassTextClassificationMetrics.num_classes > 7:
-            metrics.extend([precision_c7, recall_c7, f1_c7])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c7, MyMultiClassTextClassificationMetrics.recall_c7, MyMultiClassTextClassificationMetrics.f1_c7])
         if MyMultiClassTextClassificationMetrics.num_classes > 8:
-            metrics.extend([precision_c8, recall_c8, f1_c8])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c8, MyMultiClassTextClassificationMetrics.recall_c8, MyMultiClassTextClassificationMetrics.f1_c8])
         if MyMultiClassTextClassificationMetrics.num_classes > 9:
-            metrics.extend([precision_c9, recall_c9, f1_c9])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c9, MyMultiClassTextClassificationMetrics.recall_c9, MyMultiClassTextClassificationMetrics.f1_c9])
         if MyMultiClassTextClassificationMetrics.num_classes > 10:
-            metrics.extend([precision_c10, recall_c10, f1_c10])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c10, MyMultiClassTextClassificationMetrics.recall_c10, MyMultiClassTextClassificationMetrics.f1_c10])
         if MyMultiClassTextClassificationMetrics.num_classes > 11:
-            metrics.extend([precision_c11, recall_c11, f1_c11])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c11, MyMultiClassTextClassificationMetrics.recall_c11, MyMultiClassTextClassificationMetrics.f1_c11])
         if MyMultiClassTextClassificationMetrics.num_classes > 12:
-            metrics.extend([precision_c12, recall_c12, f1_c12])
+            metrics.extend([MyMultiClassTextClassificationMetrics.precision_c12, MyMultiClassTextClassificationMetrics.recall_c12, MyMultiClassTextClassificationMetrics.f1_c12])
 
         return metrics
 

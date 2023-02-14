@@ -83,6 +83,8 @@ def run_complex_example():
 
 # Simple example to test binary text classification datasets
 def run_binary_text_classification_dataset():
+    max_epochs = 5
+    
     #load the dataset
     data_filepath = '../data/ade_tweets/ade_tweets.tsv'
     data = BinaryTextClassification_Dataset(data_filepath, validation_set_size=0.2)
@@ -100,8 +102,11 @@ def run_binary_text_classification_dataset():
     #train the model
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y),
-                     class_weights = data.get_train_class_weights()
+                     class_weights=data.get_train_class_weights(),
+                     epochs=max_epochs
     )
+
+    classifier.save_weights('test_weights_out')
 
     #predict and evaluate
     predictions = classifier.predict(val_x)
@@ -112,7 +117,7 @@ def run_binary_text_classification_dataset():
 # Simple example to test multilabel text classification datasets
 def run_multilabel_text_classification_dataset():
     #load the dataset
-    data_filepath = '../data/i2b2_relex/i2b2_converted.tsv'
+    data_filepath = '../data/i2b2_relex/training_all.tsv'
     data = MultiLabelTextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier

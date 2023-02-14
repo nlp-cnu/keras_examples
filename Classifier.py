@@ -97,7 +97,8 @@ class Classifier(ABC):
         # set properties
         language_model.trainable = self._language_model_trainable
         language_model.output_hidden_states = False
-
+        self.language_model = language_model
+        
         #return the loaded model
         return language_model
 
@@ -185,6 +186,7 @@ class Classifier(ABC):
         Saves the model weights
         :return: None
         """
+        self.language_model.save_pretrained("lm_weights_"+filepath)
         self.model.save_weights(filepath)
 
     #function to load the model weights
@@ -236,10 +238,11 @@ class BinaryTextClassifier(Classifier):
 
         dense1 = tf.keras.layers.Dense(128, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        output1 = dropout1(dense1(sentence_representation_language_model))
 
 
         sigmoid_layer = tf.keras.layers.Dense(1, activation='sigmoid')
-        final_output = sigmoid_layer(output3)
+        final_output = sigmoid_layer(output1)
     
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
@@ -279,6 +282,11 @@ class MultiLabelTextClassifier(Classifier):
         
         #create the embeddings - the 0th index is the last hidden layer
         cls_token = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
+
+        # TODO - dropout is not used here
+        #dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        #output1 = dropout1(dense1(sentence_representation_language_model))
+
         
         #sigmoid
         sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
@@ -400,7 +408,7 @@ class MultiClassTokenClassifier(Classifier):
         #TODO - this is crashing for me, and I'm not sure why. Jack's code works though
 
 
-         def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
+        def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
             '''
             Trains the classifier, just calls the Classifier.train, but sets up batch grabbers for token
             classification datasets rather than text classification datasets
