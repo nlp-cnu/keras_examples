@@ -6,7 +6,7 @@ import tensorflow_addons as tfa
 import os
 
 
-from DataGenerator import *
+from BatchGrabber import *
 from CustomCallbacks import *
 from Metrics import *
 from abc import ABC, abstractmethod
@@ -26,9 +26,9 @@ class Classifier(ABC):
     Upon instantiation, the model is constructed. It should then be trained, and
     the model will then be saved and can be used for prediction.
 
-    Training uses a DataGenerator object, which inherits from a sequence object
-    The DataGenerator ensures that data is correctly divided into batches. 
-    This could be done manually, but the DataGenerator ensures it is done 
+    Training uses a BatchGrabber object, which inherits from a sequence object
+    The BatchGrabber ensures that data is correctly divided into batches. 
+    This could be done manually, but the BatchGrabber ensures it is done 
     correctly, and also allows for variable length batches, which massively
     increases the speed of training.
     '''
@@ -102,7 +102,7 @@ class Classifier(ABC):
         return language_model
 
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_data_generator=None, validation_data_generator=None):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -116,15 +116,15 @@ class Classifier(ABC):
         :param: epochs: the number of epochs to train for
         '''
 
-        # create the training data generator unless a special one was passed in
-        if training_data_generator is None:
-            #create a DataGenerator from the training data
-            training_data_generator = DataGenerator(x, y, batch_size, self)
+        # create the training batch grabber unless a special one was passed in
+        if training_batch_grabber is None:
+            #create a BatchGrabber from the training data
+            training_batch_grabber = TextClassificationBatchGrabber(x, y, batch_size, self)
         
-        # create the validation data generator if there is validation data
+        # create the validation batch grabber if there is validation data
         if validation_data is not None:
-            if validation_data_generator is None:
-                validation_data_generator = DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
+            if validation_batch_grabber is None:
+                validation_batch_grabber = TextClassificationBatchGrabber(validation_data[0], validation_data[1], batch_size, self)        
         
         # set up callbacks
         callbacks = []
@@ -156,9 +156,9 @@ class Classifier(ABC):
             
         # fit the model to the training data
         self.model.fit(
-            training_data_generator,
+            training_batch_grabber,
             epochs=epochs,
-            validation_data=validation_data_generator,
+            validation_data=validation_batch_grabber,
             class_weight=class_weights,
             verbose=2,
             callbacks=callbacks
@@ -197,7 +197,7 @@ class Classifier(ABC):
         self.model.load_weights(filepath)
 
 
-class Binary_Text_Classifier(Classifier):
+class BinaryTextClassifier(Classifier):
     
     def __init__(self, language_model_name, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
@@ -253,7 +253,7 @@ class Binary_Text_Classifier(Classifier):
         )
 
         
-class MultiLabel_Text_Classifier(Classifier):
+class MultiLabelTextClassifier(Classifier):
 
     def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
@@ -302,7 +302,7 @@ class MultiLabel_Text_Classifier(Classifier):
         )
 
 
-class MultiClass_Text_Classifier(Classifier):
+class MultiClassTextClassifier(Classifier):
     def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
         '''
@@ -362,7 +362,7 @@ class MultiClass_Text_Classifier(Classifier):
 #Multilabel token classification is also possible, but unlikely, so I deleted it. If
 # it gets implemented in the future, don't forget to do the correct squashing function
 # for the final layer (softmax) and correct loss (CCE)
-class MultiClass_Token_Classifier(Classifier):
+class MultiClassTokenClassifier(Classifier):
     
     def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         '''
@@ -404,7 +404,7 @@ class MultiClass_Token_Classifier(Classifier):
         
 
 
-class i2b2_Relex_Classifier(Classifier):
+class i2b2RelexClassifier(Classifier):
 
     def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
@@ -471,7 +471,7 @@ class i2b2_Relex_Classifier(Classifier):
 
 
 
-class n2c2_Relex_Classifier(Classifier):
+class n2c2RelexClassifier(Classifier):
 
     def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
