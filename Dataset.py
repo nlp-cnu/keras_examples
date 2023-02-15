@@ -55,7 +55,8 @@ class Dataset(ABC):
         # Error Checking
         if (self._val_set_size >= 1):
             raise Exception("Error: test set size must be greater than 0 and less than 1")
-        
+
+        #TODO - make a stratified test/train split
         if (self._val_set_size > 0):
             # TODO - this doesn't do stratified sampling - you need to specify stratify=labels, but its unclear how to do that for a multilabel problem
             #Split the data
@@ -456,10 +457,9 @@ class BinaryTextClassificationDataset(Dataset):
 # TODO -- may need to expand for different format types. Right now it is for span start and span end format types
 class TokenClassificationDataset(Dataset):
 
-    def __init__(self, data_file_path, num_classes, language_model_name, seed=SEED, test_set_size=0, max_num_tokens=512):
+    def __init__(self, data_file_path, num_classes, tokenizer, seed=SEED, validation_set_size=0, max_num_tokens=512):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         self.num_classes = num_classes
-        tokenizer = AutoTokenizer.from_pretrained(language_model_name)
         self.df = self.preprocess(data_file_path, tokenizer)
 
         self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
@@ -477,7 +477,7 @@ class TokenClassificationDataset(Dataset):
 
         self.data = self.df["text"].tolist()
         self._training_validation_split(self.data, self.labels)
-        #print("Number of lost tokens:", num_lost)
+        print("Number of lost tokens due to truncation:", num_lost)
 
     def preprocess(self, input_file, tokenizer):
         # Want to grab the training data, expand all the labels using the tokenizer

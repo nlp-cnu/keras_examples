@@ -105,31 +105,8 @@ class Classifier(ABC):
         self.language_model = language_model
         return language_model
 
-        
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
-        '''
-        Trains the classifier
-        :param x: the training data
-        :param y: the training labels
 
-        :param batch_size: the batch size
-        :param: validation_data: a tuple containing x and y for a validation dataset
-                so, validation_data[0] = val_x and validation_data[1] = val_y
-                If validation data is passed in, then all metrics (including loss) will 
-                report performance on the validation data
-        :param: epochs: the number of epochs to train for
-        '''
-
-        # create the training batch grabber unless a special one was passed in
-        if training_batch_grabber is None:
-            #create a Batch Grabber from the training data
-            training_batch_grabber = TextClassificationBatchGrabber(x, y, batch_size, self)
-        
-        # create the validation batch grabber if there is validation data
-        if validation_data is not None:
-            if validation_batch_grabber is None:
-                validation_batch_grabber = TextClassificationBatchGrabber(validation_data[0], validation_data[1], batch_size, self)        
-        
+    def set_up_callbacks(self, early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data):
         # set up callbacks
         callbacks = []
         if test_data is not None:
@@ -157,7 +134,37 @@ class Classifier(ABC):
                 print ("early_stopping_mode automatically set to " + str(early_stopping_mode))
             
             callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=early_stopping_patience, restore_best_weights=restore_best_weights, mode=early_stopping_mode))
-            
+
+        return callbacks
+    
+        
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
+        '''
+        Trains the classifier
+        :param x: the training data
+        :param y: the training labels
+
+        :param batch_size: the batch size
+        :param: validation_data: a tuple containing x and y for a validation dataset
+                so, validation_data[0] = val_x and validation_data[1] = val_y
+                If validation data is passed in, then all metrics (including loss) will 
+                report performance on the validation data
+        :param: epochs: the number of epochs to train for
+        '''
+
+        # create the training batch grabber unless a special one was passed in
+        if training_batch_grabber is None:
+            #create a Batch Grabber from the training data
+            training_batch_grabber = TextClassificationBatchGrabber(x, y, batch_size, self)
+        
+        # create the validation batch grabber if there is validation data
+        if validation_data is not None:
+            if validation_batch_grabber is None:
+                validation_batch_grabber = TextClassificationBatchGrabber(validation_data[0], validation_data[1], batch_size, self)        
+        
+        # get the callbacks
+        callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data)
+                
         # fit the model to the training data
         self.model.fit(
             training_batch_grabber,
@@ -401,67 +408,40 @@ class MultiClassTokenClassifier(Classifier):
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
     
-        #compile the model
+        #create the optimizer, metrics, and compile the model
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        my_metrics = MyMultiClassTokenClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
         self.model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
-            metrics=['accuracy'] 
-        )#TODO - what metrics to report for multiclass? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own, TODO - Jack has some
-        #TODO - this is crashing for me, and I'm not sure why. Jack's code works though
+            metrics=metrics
+        )
 
+    def train(self, x, y,
+              batch_size=Classifier.BATCH_SIZE, validation_data=None, epochs=Classifier.EPOCHS, model_out_file_name=Classifier.MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
+        '''
+        Trains the classifier, just calls the Classifier.train, but sets up batch grabbers for token
+        classification datasets rather than text classification datasets
+        '''
+        # create the training batch grabber unless a special one was passed in
+        if training_batch_grabber is None:
+            #create a Batch Grabber from the training data
+            training_batch_grabber = TokenClassifierBatchGrabber(x, y, batch_size, self)
+        
+        # create the validation batch grabber if there is validation data
+        if validation_data is not None:
+            if validation_batch_grabber is None:
+                validation_batch_grabber = TokenClassifierBatchGrabber(validation_data[0], validation_data[1], batch_size, self)
 
-        def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
-            '''
-            Trains the classifier, just calls the Classifier.train, but sets up batch grabbers for token
-            classification datasets rather than text classification datasets
-            '''
-            # create the training batch grabber unless a special one was passed in
-            if training_batch_grabber is None:
-                #create a Batch Grabber from the training data
-                training_batch_grabber = TokenClassificationBatchGrabber(x, y, batch_size, self)
-        
-            # create the validation batch grabber if there is validation data
-            if validation_data is not None:
-                if validation_batch_grabber is None:
-                    validation_batch_grabber = TokenClassificationBatchGrabber(validation_data[0], validation_data[1], batch_size, self)
-            Classifier.train(self, x, y, batch_size=BATCH_SIZE, validation_data=validation_data, epochs=epochs, model_out_file_name=model_out_file, early_stopping_monitor=early_stopping_monitor, early_stopping_patience=early_stopping_patience, restore_best_weights=restore_best_weights, early_stopping_mode=early_stopping_mode, class_weights=class_weights, test_data=test_data, training_batch_grabber=training_batch_grabber, validation_batch_grabber=validation_batch_grabber)
-        
-        
-        # set up callbacks
-        callbacks = []
-        if test_data is not None:
-            if len(test_data) != 2:
-                raise Exception("Error: test_data should be a tuple of (test_x, test_y)")
-            callbacks.append(OutputTestSetPerformanceCallback(self, test_data[0], test_data[1]))
-        if not model_out_file_name == '':
-            callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
-        if early_stopping_patience > 0:
-            #try to correctly set the early stopping mode
-            #  (checks if it should stop when increasing (max) or decreasing (min)
-            if early_stopping_mode == '':
-                if 'loss' in early_stopping_monitor.lower():
-                    early_stopping_mode='min'
-                elif 'f1' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
-                elif 'prec' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
-                elif 'rec' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
-                elif 'acc' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
-                else:
-                    early_stopping_mode='auto'    
-                print ("early_stopping_mode automatically set to " + str(early_stopping_mode))
-            
-            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=early_stopping_patience, restore_best_weights=restore_best_weights, mode=early_stopping_mode))
-            
+        # get the callbacks
+        callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data)
+                
         # fit the model to the training data
         self.model.fit(
             training_batch_grabber,
             epochs=epochs,
             validation_data=validation_batch_grabber,
-            class_weight=class_weights,
             verbose=2,
             callbacks=callbacks
         )

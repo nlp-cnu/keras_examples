@@ -46,8 +46,14 @@ class MyMultiClassTokenClassificationMetrics:
         return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
 
 
-    def macro_f1( y_true, y_pred):
+    def macro_F1( y_true, y_pred):
         return K.sum([MyMultiClassTokenClassificationMetrics.class_f1(y_true, y_pred, i) for i in range(MyMultiClassTokenClassificationMetrics.num_classes)]) / MyMultiClassTokenClassificationMetrics.num_classes
+
+    def macro_precision( y_true, y_pred):
+        return K.sum([MyMultiClassTokenClassificationMetrics.class_precision(y_true, y_pred, i) for i in range(MyMultiClassTokenClassificationMetrics.num_classes)]) / MyMultiClassTokenClassificationMetrics.num_classes
+
+    def macro_recall( y_true, y_pred):
+        return K.sum([MyMultiClassTokenClassificationMetrics.class_recall(y_true, y_pred, i) for i in range(MyMultiClassTokenClassificationMetrics.num_classes)]) / MyMultiClassTokenClassificationMetrics.num_classes
 
 
     def micro_recall(y_true, y_pred):
@@ -64,15 +70,17 @@ class MyMultiClassTokenClassificationMetrics:
         return precision
 
 
-    def micro_f1(y_true, y_pred):
+    def micro_F1(y_true, y_pred):
         precision = MyMultiClassTokenClassificationMetrics.micro_precision(y_true, y_pred)
         recall = MyMultiClassTokenClassificationMetrics.micro_recall(y_true, y_pred)
         return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
+
+    #TODO - implement a num_neg metric
     
 
     def get_all_metrics(self):
         # add macro and micro metrics
-        metrics = [ MyMultiClassTokenClassificationMetrics.num_neg,
+        metrics = [ #MyMultiClassTokenClassificationMetrics.num_neg,
                     MyMultiClassTokenClassificationMetrics.macro_precision, MyMultiClassTokenClassificationMetrics.macro_recall, MyMultiClassTokenClassificationMetrics.macro_F1,
                     MyMultiClassTokenClassificationMetrics.micro_precision, MyMultiClassTokenClassificationMetrics.micro_recall, MyMultiClassTokenClassificationMetrics.micro_F1 ]
 

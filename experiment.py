@@ -176,21 +176,20 @@ def run_multiclass_text_classification_dataset():
 
 # Simple example to test multiclass token classification datasets
 def run_multiclass_token_classification_dataset(): 
-    #load the dataset
     data_filepath = '../data/i2b2_ner/training_data.tsv'
-    data = TokenClassificationDataset(data_filepath, validation_set_size=0.2)
-
-    #create classifier and load data for a multiclass text classifier
     language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
     num_classes = 3
-    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
     
-    #get the training data
+    #create classifier
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+
+    # load the data and split into train/validation
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.2)
     train_x, train_y = data.get_train_data()
     val_x, val_y = data.get_validation_data()
-
+    
     #train the model
-    #Note: class_weights are not supported for 3D targets, so we can't do it for token classification, at least not how we currently have it set up
+    #Note: class_weights are not supported for 3D targets, so we can't do it for token classification, at least not how we currently have it set up    
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y)       
     )
@@ -209,5 +208,5 @@ if __name__ == '__main__':
     #run_binary_text_classification_dataset()
     #run_multilabel_text_classification_dataset()
     #run_multiclass_text_classification_dataset()
-    run_multilabel_token_classification_dataset()
+    run_multiclass_token_classification_dataset()
     
