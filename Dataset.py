@@ -278,7 +278,7 @@ class Dataset(ABC):
 
         
 #TODO - this is based on Max's code and has some hardcoded values - make it more generic
-class MultiLabelTextClassificationDataset(Dataset):
+class TextClassificationDataset(Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         # load the labels
@@ -327,9 +327,9 @@ class MultiLabelTextClassificationDataset(Dataset):
 
 
             
-
+#TODO - should this inherit from TextClassificationDataset rather than Dataset?
 #Loads data in which there is a single (categorical) label column (e.g. class 0 = 0, class 2 = 2)
-class MultiClassTextClassification_Dataset(Dataset):
+class CategoricalTextClassificationDataset(Dataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         #load the labels
@@ -371,7 +371,7 @@ class MultiClassTextClassification_Dataset(Dataset):
         
     
 #Load a data and labels for a text classification dataset
-class BinaryTextClassification_Dataset(Dataset):
+class BinaryTextClassificationDataset(Dataset):
     '''
     Class to load and store a text classification dataset. Text classification datasets
     contain text and a label for the text, and possibly other information. Columns
@@ -567,7 +567,7 @@ class TokenClassificationDataset(Dataset):
             self.class_weights[i]=val
 
 
-class MyPersonalityDataset(MultiLabelTextClassificationDataset):
+class MyPersonalityDataset(TextClassificationDataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
@@ -591,7 +591,7 @@ class MyPersonalityDataset(MultiLabelTextClassificationDataset):
         self._determine_class_weights()
 
 
-class EssaysDataset(MultiLabelTextClassificationDataset):
+class EssaysDataset(TextClassificationDataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         
@@ -615,7 +615,7 @@ class EssaysDataset(MultiLabelTextClassificationDataset):
         self._determine_class_weights()
 
 
-class n2c2RelexDataset(MultiLabelTextClassificationDataset):
+class n2c2RelexDataset(TextClassificationDataset):
     def __init__(self, data_file_path, labels_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
         # load the labels
@@ -752,7 +752,7 @@ class n2c2RelexDataset_multiclass(Dataset):
 
     
         
-class i2b2RelexDataset(MultiLabelTextClassificationDataset):
+class i2b2RelexDataset(TextClassificationDataset):
     def __init__(self, data_file_path, text_column_name=None, label_column_name=None, seed=SEED, validation_set_size=0, shuffle_data=True):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
         

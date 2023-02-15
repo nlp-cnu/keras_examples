@@ -88,21 +88,21 @@ class Classifier(ABC):
 
     def load_language_model(self):
 
-        language_model = TFBertModel.from_pretrained('lm_weights_test_weights_out')
+        #language_model = TFBertModel.from_pretrained('lm_weights_test_weights_out')
         
         # either load the language model locally or grab it from huggingface
-        #if os.path.isdir(self._language_model_name):
-        #    language_model = TFBertModel.from_pretrained(self._language_model_name, from_pt=True)
-        #    # else the language model can be grabbed directly from huggingface
-        #else:
-        #    language_model = TFAutoModel.from_pretrained(self._language_model_name)
+        if os.path.isdir(self._language_model_name):
+            language_model = TFBertModel.from_pretrained(self._language_model_name, from_pt=True)
+            # else the language model can be grabbed directly from huggingface
+        else:
+            language_model = TFAutoModel.from_pretrained(self._language_model_name)
 
         # set properties
         language_model.trainable = self._language_model_trainable
         language_model.output_hidden_states = False
-        self.language_model = language_model
         
         #return the loaded model
+        self.language_model = language_model
         return language_model
 
         
@@ -346,11 +346,11 @@ class MultiClassTextClassifier(Classifier):
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
-
+       
         #softmax
         softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
         final_output = softmax_layer(output1)
-    
+        
         #combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 

@@ -87,7 +87,7 @@ def run_binary_text_classification_dataset():
     
     #load the dataset
     data_filepath = '../data/ade_tweets/ade_tweets.tsv'
-    data = BinaryTextClassification_Dataset(data_filepath, validation_set_size=0.2)
+    data = BinaryTextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a binary text classifier
     language_model_name = Classifier.ROBERTA_TWITTER
@@ -118,7 +118,7 @@ def run_binary_text_classification_dataset():
 def run_multilabel_text_classification_dataset():
     #load the dataset
     data_filepath = '../data/i2b2_relex/training_all.tsv'
-    data = MultiLabelTextClassificationDataset(data_filepath, validation_set_size=0.2)
+    data = TextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
@@ -148,13 +148,14 @@ def run_multilabel_text_classification_dataset():
 def run_multiclass_text_classification_dataset():
     #TODO - test this on a dataset that is actually multiclass rather than multilabel
     #load the dataset
-    data_filepath = '../data/i2b2_relex/i2b2_converted.tsv'
-    data = MultiLabelTextClassification_Dataset(data_filepath, validation_set_size=0.2)
+    data_filepath = '../data/i2b2_relex/training_all.tsv'
+    data = TextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
     language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
     num_classes = 8
     classifier = MultiClassTextClassifier(language_model_name, num_classes)
+    
     
     #get the training data
     train_x, train_y = data.get_train_data()
@@ -196,6 +197,7 @@ def run_multiclass_token_classification_dataset():
 
     #TODO - add evaluation portion for predict
 
+    
           
 
     
@@ -204,8 +206,8 @@ def run_multiclass_token_classification_dataset():
 if __name__ == '__main__':
 
     #run_complex_example()
-    run_binary_text_classification_dataset()
+    #run_binary_text_classification_dataset()
     #run_multilabel_text_classification_dataset()
     #run_multiclass_text_classification_dataset()
-    #run_multilabel_token_classification_dataset()
+    run_multilabel_token_classification_dataset()
     

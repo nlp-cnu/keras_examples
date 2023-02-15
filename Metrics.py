@@ -508,17 +508,16 @@ class MyMultiClassTextClassificationMetrics:
          return 2*((precision * recall)/(precision + recall + K.epsilon()))
 
     def micro_recall(y_true, y_pred):
-
         maxpre = K.argmax(K.clip(y_pred, 0, 1), axis=1)    # finds index of all max values in maxpre
-        rep = K.one_hot(maxpre, 9)
+        rep = K.one_hot(maxpre, MyMultiClassTextClassificationMetrics.num_classes)
         true_positives = K.sum(rep*y_true)
         possible_positives = K.sum(y_true)
         return true_positives / (possible_positives + K.epsilon())
 
 
-    def micro_precision(y_true, y_pred): #change
+    def micro_precision(y_true, y_pred):
         maxpre = K.argmax(K.clip(y_pred, 0, 1), axis=1)    # finds index of all max values in maxpre
-        rep = K.one_hot(maxpre, 9)
+        rep = K.one_hot(maxpre, MyMultiClassTextClassificationMetrics.num_classes)
         true_positives = K.sum(rep*y_true)
         predicted_positives = K.sum(rep)
         return true_positives / (predicted_positives + K.epsilon())
