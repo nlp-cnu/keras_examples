@@ -446,6 +446,73 @@ class MultiClassTokenClassifier(Classifier):
             callbacks=callbacks
         )
 
+    def evaluate_predictions(self, pred_y, true_y):
+        p = pred_y
+        g = true_y
+        
+        pred_micro_precisions = []
+        pred_macro_precisions = []
+        pred_micro_recalls = []
+        pred_macro_recalls = []
+        pred_micro_f1s = []
+        pred_macro_f1s = []
+
+ 
+        # making y_pred and y_true have the same size by trimming
+        num_samples = p.shape[0]
+        max_num_tokens_in_batch = p.shape[1]
+        # Transforms g to the same size as P
+        # removes the NONE class
+        g = g[:, :max_num_tokens_in_batch, :]
+
+        gt_final = []
+        pred_final = []
+
+        for sample_pred, sample_gt, i in zip(p, g, range(num_samples)):
+            # vv Find where the gt labels stop (preds will be junk after this) and trim the labels and predictions vv
+            trim_index = 0
+            while trim_index < len(sample_gt) and not all(v == 0 for v in sample_gt[trim_index]):
+                trim_index += 1
+                sample_gt = sample_gt[:trim_index, :]
+                for s in sample_gt:
+                    gt_final.append(s.tolist())
+
+                sample_pred = (sample_pred == sample_pred.max(axis=1)[:,None]).astype(int)
+                sample_pred = sample_pred[:trim_index, :]
+                for s in sample_pred:
+                    pred_final.append(s.tolist())
+
+                    # ^^^^^
+        # Transforming the predictions and labels so that the NONE class is not counted
+        p = np.array(pred_final)
+        g = np.array(gt_final)
+
+        p = p.reshape((-1, num_classes))[:, 1:]
+        g = g.reshape((-1, num_classes))[:, 1:]
+
+        # Calculating the metrics w/ sklearn
+        target_names = list(class_map)[1:]
+        report_metrics = classification_report(g, p, target_names=target_names, digits=3, output_dict=True)
+
+        # collecting the reported metrics
+        micro_averaged_stats = report_metrics["micro avg"]
+        micro_precision = micro_averaged_stats["precision"]
+        pred_micro_precisions.append(micro_precision)
+        micro_recall = micro_averaged_stats["recall"]
+        pred_micro_recalls.append(micro_recall)
+        micro_f1 = micro_averaged_stats["f1-score"]
+        pred_micro_f1s.append(micro_f1)
+
+        macro_averaged_stats = report_metrics["macro avg"]
+        macro_precision = macro_averaged_stats["precision"]
+        pred_macro_precisions.append(macro_precision)
+        macro_recall = macro_averaged_stats["recall"]
+        pred_macro_recalls.append(macro_recall)
+        macro_f1 = macro_averaged_stats["f1-score"]
+        pred_macro_f1s.append(macro_f1)
+
+            
+ 
 
         
         

@@ -194,11 +194,10 @@ def run_multiclass_token_classification_dataset():
                      validation_data=(val_x, val_y)       
     )
 
-    #TODO - add evaluation portion for predict
-
-    
-          
-
+    #evaluate performance on the validation set
+    predictions = classifier.predict(val_x)
+    classifier.evaluate_predictions(predictions, val_y)
+    # TODO - implement this function --- we don't want to count the none class and have to do some semi-complex stuff. 
     
 
 #This is the main running method for the script
