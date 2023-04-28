@@ -75,7 +75,7 @@ class NLPModel():
         callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss',
                                        patience=5,
                                        restore_best_weights=True,
-                                       mode='max'))
+                                       mode='min'))
 
         # fit the model. We pass in the data generator which will handle splitting
         # the data for each batch
