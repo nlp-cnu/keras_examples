@@ -6,7 +6,7 @@ import tensorflow_addons as tfa
 import os
 
 
-from BatchGrabber import *
+from DataHandler import *
 from CustomCallbacks import *
 from Metrics import *
 from abc import ABC, abstractmethod
@@ -26,9 +26,9 @@ class Classifier(ABC):
     Upon instantiation, the model is constructed. It should then be trained, and
     the model will then be saved and can be used for prediction.
 
-    Training uses a BatchGrabber object, which inherits from a sequence object
-    The BatchGrabber ensures that data is correctly divided into batches. 
-    This could be done manually, but the BatchGrabber ensures it is done 
+    Training uses a DataHandler object, which inherits from a sequence object
+    The DataHandler ensures that data is correctly divided into batches. 
+    This could be done manually, but the DataHandler ensures it is done 
     correctly, and also allows for variable length batches, which massively
     increases the speed of training.
     '''
@@ -138,7 +138,7 @@ class Classifier(ABC):
         return callbacks
     
         
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_data_handler=None, validation_data_handler=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -152,24 +152,24 @@ class Classifier(ABC):
         :param: epochs: the number of epochs to train for
         '''
 
-        # create the training batch grabber unless a special one was passed in
-        if training_batch_grabber is None:
-            #create a Batch Grabber from the training data
-            training_batch_grabber = TextClassificationBatchGrabber(x, y, batch_size, self)
+        # create the training data handler unless a special one was passed in
+        if training_data_handler is None:
+            #create a DataHAndler from the training data
+            training_data_handler = TextClassificationDataHandler(x, y, batch_size, self)
         
-        # create the validation batch grabber if there is validation data
+        # create the validation data handler if there is validation data
         if validation_data is not None:
-            if validation_batch_grabber is None:
-                validation_batch_grabber = TextClassificationBatchGrabber(validation_data[0], validation_data[1], batch_size, self)        
+            if validation_data_handler is None:
+                validation_data_handler = TextClassificationDataHandler(validation_data[0], validation_data[1], batch_size, self)        
         
         # get the callbacks
         callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data)
                 
         # fit the model to the training data
         self.model.fit(
-            training_batch_grabber,
+            training_data_handler,
             epochs=epochs,
-            validation_data=validation_batch_grabber,
+            validation_data=validation_data_handler,
             class_weight=class_weights,
             verbose=2,
             callbacks=callbacks
@@ -422,29 +422,29 @@ class MultiClassTokenClassifier(Classifier):
         )
 
     def train(self, x, y,
-              batch_size=Classifier.BATCH_SIZE, validation_data=None, epochs=Classifier.EPOCHS, model_out_file_name=Classifier.MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_batch_grabber=None, validation_batch_grabber=None):
+              batch_size=Classifier.BATCH_SIZE, validation_data=None, epochs=Classifier.EPOCHS, model_out_file_name=Classifier.MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_data_handler=None, validation_data_handler=None):
         '''
-        Trains the classifier, just calls the Classifier.train, but sets up batch grabbers for token
+        Trains the classifier, just calls the Classifier.train, but sets up data handlers for token
         classification datasets rather than text classification datasets
         '''
-        # create the training batch grabber unless a special one was passed in
-        if training_batch_grabber is None:
-            #create a Batch Grabber from the training data
-            training_batch_grabber = TokenClassifierBatchGrabber(x, y, batch_size, self)
+        # create the training data handler unless a special one was passed in
+        if training_data_handler is None:
+            #create a DataHandler from the training data
+            training_data_handler = TokenClassifierDataHandler(x, y, batch_size, self)
         
-        # create the validation batch grabber if there is validation data
+        # create the validation data handler if there is validation data
         if validation_data is not None:
-            if validation_batch_grabber is None:
-                validation_batch_grabber = TokenClassifierBatchGrabber(validation_data[0], validation_data[1], batch_size, self)
+            if validation_data_handler is None:
+                validation_data_handler = TokenClassifierDataHandler(validation_data[0], validation_data[1], batch_size, self)
 
         # get the callbacks
         callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data)
                 
         # fit the model to the training data
         self.model.fit(
-            training_batch_grabber,
+            training_data_handler,
             epochs=epochs,
-            validation_data=validation_batch_grabber,
+            validation_data=validation_data_handler,
             verbose=2,
             callbacks=callbacks
         )
