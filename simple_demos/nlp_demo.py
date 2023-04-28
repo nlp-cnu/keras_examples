@@ -77,7 +77,7 @@ class NLPModel():
                                        restore_best_weights=True,
                                        mode='min'))
 
-        # fit the model. We pass in the data generator which will handle splitting
+        # fit the model. We pass in the data handler which will handle splitting
         # the data for each batch
         history = self.model.fit(
             training_data_handler,
