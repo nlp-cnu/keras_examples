@@ -27,7 +27,7 @@ def run_complex_example():
     max_length = 512
     
     #load the dataset
-    data_filepath = '../data/interview_eval/essays.csv'
+    data_filepath = '../../data/interview_eval/essays.csv'
     num_classes = 5
     data = EssaysDataset(data_filepath, validation_set_size=0.2)
     
@@ -86,7 +86,7 @@ def run_binary_text_classification_dataset():
     max_epochs = 5
     
     #load the dataset
-    data_filepath = '../data/ade_tweets/ade_tweets.tsv'
+    data_filepath = '../../data/ade_tweets/ade_tweets.tsv'
     data = BinaryTextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a binary text classifier
@@ -117,7 +117,7 @@ def run_binary_text_classification_dataset():
 # Simple example to test multilabel text classification datasets
 def run_multilabel_text_classification_dataset():
     #load the dataset
-    data_filepath = '../data/i2b2_relex/training_all.tsv'
+    data_filepath = '../../data/i2b2_relex/training_all.tsv'
     data = TextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
@@ -148,7 +148,7 @@ def run_multilabel_text_classification_dataset():
 def run_multiclass_text_classification_dataset():
     #TODO - test this on a dataset that is actually multiclass rather than multilabel
     #load the dataset
-    data_filepath = '../data/i2b2_relex/training_all.tsv'
+    data_filepath = '../../data/i2b2_relex/training_all.tsv'
     data = TextClassificationDataset(data_filepath, validation_set_size=0.2)
 
     #create classifier and load data for a multiclass text classifier
@@ -176,7 +176,7 @@ def run_multiclass_text_classification_dataset():
 
 # Simple example to test multiclass token classification datasets
 def run_multiclass_token_classification_dataset(): 
-    data_filepath = '../data/i2b2_ner/training_data.tsv'
+    data_filepath = '../../data/i2b2_ner/training_data.tsv'
     language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
     num_classes = 3
     

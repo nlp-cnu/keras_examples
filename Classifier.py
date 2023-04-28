@@ -196,7 +196,10 @@ class Classifier(ABC):
         Saves the model weights
         :return: None
         """
-        self.language_model.save_pretrained("lm_weights_"+filepath)
+        # if you want to just save the language model weights, you can
+        #self.language_model.save_pretrained("lm_weights_"+filepath)
+
+        # but, mostly we just want to save the entire model's weights
         self.model.save_weights(filepath)
 
     #function to load the model weights
@@ -445,6 +448,10 @@ class MultiClassTokenClassifier(Classifier):
             verbose=2,
             callbacks=callbacks
         )
+
+    #def predict(self, x, batch_size=BATCH_SIZE):
+    #    pass
+   
 
     def evaluate_predictions(self, pred_y, true_y):
         p = pred_y

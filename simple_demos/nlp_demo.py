@@ -64,10 +64,10 @@ class NLPModel():
 
     def train(self, X_train, Y_train, X_val, Y_val, epochs=100, batch_size=25):
 
-        # create a data generator, which is responsible for tokenizing
-        # the data and creating batches
-        training_data_generator = DataGenerator(X_train, Y_train, batch_size, self.tokenizer, self.max_length)
-        validation_data_generator = DataGenerator(X_val, Y_val, batch_size, self.tokenizer, self.max_length)
+        # create a data handler, which is responsible for tokenizing
+        # the data, creating batches, and shuffling between batches
+        training_data_handler = DataHandler(X_train, Y_train, batch_size, self.tokenizer, self.max_length)
+        validation_data_handler = DataHandler(X_val, Y_val, batch_size, self.tokenizer, self.max_length)
 
         # set up callbacks
         # NOTE: this will break with val_f1_score -- not sure why, can use custom metrics though
@@ -80,8 +80,8 @@ class NLPModel():
         # fit the model. We pass in the data generator which will handle splitting
         # the data for each batch
         history = self.model.fit(
-            training_data_generator,
-            validation_data=validation_data_generator,
+            training_data_handler,
+            validation_data=validation_data_handler,
             epochs=epochs,
             callbacks=callbacks
          )
@@ -90,20 +90,34 @@ class NLPModel():
 
 
     def predict(self, x, batch_size=100):
-            """
-            Predicts labels for data
-            :param x: data
-            :return: predictions
-            """
-            tokenized = self.tokenizer(x, padding=True, truncation=True, max_length=self.max_length,
-                                   return_tensors='tf')
-            x = (tokenized['input_ids'], tokenized['attention_mask'])
+        """
+        Predicts labels for data
+        :param x: data
+        :return: predictions
+        """
+        tokenized = self.tokenizer(x, padding=True, truncation=True, max_length=self.max_length,
+                                return_tensors='tf')
+        x = (tokenized['input_ids'], tokenized['attention_mask'])
 
-            return self.model.predict(x, batch_size=batch_size)
+        return self.model.predict(x, batch_size=batch_size)
 
 
+    def save_weights(self, file_path):
+        """
+        Saves the model weights to file_path
+        :return: None
+        """
+        self.model.save_weights(file_path)
 
-class DataGenerator(tf.keras.utils.Sequence):
+        
+    def load_weights(self, file_path):
+        """
+        Loads the model weights from the file_path
+        """
+        self.model.load_weights(file_path)
+        
+
+class DataHandler(tf.keras.utils.Sequence):
 
     def __init__(self, x_set, y_set, batch_size, tokenizer, max_length):
         self._x = x_set
