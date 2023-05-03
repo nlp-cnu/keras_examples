@@ -206,8 +206,12 @@ class Classifier(ABC):
     def load_weights(self, filepath):
         """
         Loads weights for the model
-        :param filepath: the filepath (without extension) of the model #TODO - is that the file_path?
-        :return:
+        The models are saved as three files:
+            "checkpoint"
+            "<model_name>.data-0000-of-00001" (maybe more of these)
+            "<model_name>.index"
+        :param filepath: the filepath and model_name (without extension) of the model
+        :return: None
         """
         self.model.load_weights(filepath)
 

@@ -112,8 +112,14 @@ class NLPModel():
         
     def load_weights(self, file_path):
         """
-        Loads the model weights from the file_path
-        """
+        Loads weights for the model
+        The models are saved as three files:
+            "checkpoint"
+            "<model_name>.data-0000-of-00001" (maybe more of these)
+            "<model_name>.index"
+        :param filepath: the filepath and model_name (without extension) of the model
+        :return: None
+        """  
         self.model.load_weights(file_path)
         
 
