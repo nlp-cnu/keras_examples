@@ -425,8 +425,10 @@ class MultiClassTokenClassifier(Classifier):
             metrics=metrics
         )
 
-    def train(self, x, y,
-              batch_size=Classifier.BATCH_SIZE, validation_data=None, epochs=Classifier.EPOCHS, model_out_file_name=Classifier.MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_data_handler=None, validation_data_handler=None):
+    def train(self, x, y, batch_size=Classifier.BATCH_SIZE, validation_data=None, epochs=Classifier.EPOCHS,
+              model_out_file_name=Classifier.MODEL_OUT_FILE_NAME, early_stopping_monitor='loss',
+              early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None,
+              test_data=None, training_data_handler=None, validation_data_handler=None):
         '''
         Trains the classifier, just calls the Classifier.train, but sets up data handlers for token
         classification datasets rather than text classification datasets
@@ -442,7 +444,8 @@ class MultiClassTokenClassifier(Classifier):
                 validation_data_handler = TokenClassifierDataHandler(validation_data[0], validation_data[1], batch_size, self)
 
         # get the callbacks
-        callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data)
+        callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience,
+                                          model_out_file_name, restore_best_weights, test_data)
                 
         # fit the model to the training data
         self.model.fit(
@@ -453,14 +456,163 @@ class MultiClassTokenClassifier(Classifier):
             callbacks=callbacks
         )
 
-    #def predict(self, x, batch_size=BATCH_SIZE):
-    #    pass
-   
+    def predict(self, x, batch_size=Classifier.BATCH_SIZE):
+        """
+        Predicts labels for data
+        :param x: data
+        :param batch_size: batch size
+        :return: predictions
+        """
+        if not isinstance(x, tf.keras.utils.Sequence):
+            tokenized = self.tokenizer(list(x), padding=True, truncation=True, max_length=self._max_length, return_tensors='tf')
+            x = (tokenized['input_ids'], tokenized['attention_mask'])
+        return self.model.predict(x, batch_size=batch_size)
 
-    def evaluate_predictions(self, pred_y, true_y):
+
+    def convert_predictions_to_brat_format(self, x, y, class_names, dataset, output_name):
+        """
+        converts text and labels to brat format, which consists of two files.
+           A .txt file containing the text
+           A .ann file containing the annotations
+        The .ann file contains 1 line per annotation. For NER, the lines look like:
+            T<Index>  <ClassName> <SpanStart> <SpanEnd>   <Text>
+        For example:
+            T3  Drug    1094    1101    Lipitor
+
+        - The assigned index is arbitrary
+        - The ClassName is the string of the class
+        - The SpanStart is the character span start of the annotation.
+        - The SpanEnd is the character span end of the annotation
+            -- Span starts and ends start counting at the beginning of the document. New line characters are counted
+        - Text the text contained within the span (useful for debugging)
+
+        :param x: the input text
+        :param y: the labels
+        """
+
+        text = dataset.data  # the text data is new line separeted
+        #labels = dataset.labels # the labels are the labels for each line, a 3-D matrix, where each 2-D matrix are
+                                # the labels for that line. Which is a vector for each token in the sentence
+        # predictions are the same format as dataset.labels
+
+        # There may be a mismatch between labels and text because the labels are based on tokenized data
+        # So, we need to map the tokenized text to the original text and create our spans accordingly
+
+        num_classes = len(class_names)
+        previous_text_length = 0
+        annotations = []
+
+        # create a document text to grab spans from
+        document_text = ''
+        for text_line in text:
+            document_text += text_line
+
+        # iterate over each line
+        for x_line, y_line in zip(x, y):
+            # iterate over each token in the line
+            for token, labels in zip(x_line, y_line):
+                # find the length of this text (used to update the previous text length)
+                this_text_length = len(token)
+
+                # output for each true class
+                for i in range(num_classes):
+                    if labels[i] == 1:
+                        span_start = previous_text_length
+                        span_end = previous_text_length + this_text_length
+                        span_text = document_text[span_start:span_end]
+                        token_text = token
+
+                        annotation = {}
+                        annotation['class_name'] = class_names[i]
+                        annotation['span_start'] = span_start
+                        annotation['span_end'] = span_end
+                        annotation['span_text'] = span_text
+                        annotation['token_text'] = token_text
+
+                        if span_text != token_text:
+                            print(f"Warning span and token text do not match: {span_text}, {token_text}")
+
+                        annotations.append(annotation)
+
+                # update the current span length
+                previous_text_length += this_text_length
+
+
+        # The previous code doesn't account for mult-token or multi-word spans
+        # Here, merge any spans with the same label and adjacent span_end, span_starts
+        entity_num = 1
+        i = 0
+        while i < len(annotations):
+            # record if a merge happens
+            merged = False
+
+            # check if this is a multi-token or multi-word span
+            # First, check if there is a next annotations
+            if i+1 < len(annotations):
+                # Next, check if the next annotation is the same type
+                if annotations[i]['class_name'] == annotations[i+1]['class_name']:
+                    # Now, check if the annotations are adjacent in text
+                    if annotations[i]['end_span'] == annotations[i+1]['start_span'] - 1:
+                        # These are a multi-token annotation, so merge them
+                        annotations[i]['end_span'] = annotations[i+1]['end_span']
+                        annotations[i]['span_text'] += annotations[i+1]['span_text']
+                        annotations[i]['token_text'] += annotations[i+1]['token_text']
+
+                        # delete the i+1 annotation and record that a merge happend
+                        del annotations[i+1]
+                        merged = True
+
+            # only update i if a merge didn't happen. This is because we want to iteratively
+            # merge multi-token spans which may be 2,3,4,+ tokens long
+            if not merged:
+                i += 1
+
+        # output the annotations and text
+        with open(output_name + '.txt') as f:
+            f.writelines(text)
+
+        with open(output_name + '.ann') as f:
+            entity_num = 1
+            for annotation in annotations:
+                f.write(f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}")
+                entity_num += 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    import sklearn
+    def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3):
+        """
+        Evaluates the predictions against true values. Does not consider the None class
+        in the evaluation
+        :param pred_y: matrix of predicted values
+        :param true_y: matrix of true values
+        :param class_names: an ordered list of class names (strings)
+        :param decimal_places: an integer specifying the number of decimal places to output
+        """
+
+        # set up variables
         p = pred_y
         g = true_y
-        
         pred_micro_precisions = []
         pred_macro_precisions = []
         pred_micro_recalls = []
@@ -468,7 +620,6 @@ class MultiClassTokenClassifier(Classifier):
         pred_micro_f1s = []
         pred_macro_f1s = []
 
- 
         # making y_pred and y_true have the same size by trimming
         num_samples = p.shape[0]
         max_num_tokens_in_batch = p.shape[1]
@@ -476,9 +627,9 @@ class MultiClassTokenClassifier(Classifier):
         # removes the NONE class
         g = g[:, :max_num_tokens_in_batch, :]
 
+        # trim the predictions up to the max length
         gt_final = []
         pred_final = []
-
         for sample_pred, sample_gt, i in zip(p, g, range(num_samples)):
             # vv Find where the gt labels stop (preds will be junk after this) and trim the labels and predictions vv
             trim_index = 0
@@ -497,36 +648,33 @@ class MultiClassTokenClassifier(Classifier):
         # Transforming the predictions and labels so that the NONE class is not counted
         p = np.array(pred_final)
         g = np.array(gt_final)
-
-        p = p.reshape((-1, num_classes))[:, 1:]
-        g = g.reshape((-1, num_classes))[:, 1:]
+        p = p.reshape((-1, self._num_classes))[:, 1:]
+        g = g.reshape((-1, self._num_classes))[:, 1:]
 
         # Calculating the metrics w/ sklearn
-        target_names = list(class_map)[1:]
-        report_metrics = classification_report(g, p, target_names=target_names, digits=3, output_dict=True)
+        #target_names = list(class_map)[1:]
+        report_metrics = sklearn.metrics.classification_report(g, p, target_names=class_names, digits=decimal_places)#, output_dict=True)
 
-        # collecting the reported metrics
-        micro_averaged_stats = report_metrics["micro avg"]
-        micro_precision = micro_averaged_stats["precision"]
-        pred_micro_precisions.append(micro_precision)
-        micro_recall = micro_averaged_stats["recall"]
-        pred_micro_recalls.append(micro_recall)
-        micro_f1 = micro_averaged_stats["f1-score"]
-        pred_micro_f1s.append(micro_f1)
+        # collecting the reported metrics (useful if you want to output them, but not used now)
+        #micro_averaged_stats = report_metrics["micro avg"]
+        #micro_precision = micro_averaged_stats["precision"]
+        #pred_micro_precisions.append(micro_precision)
+        #micro_recall = micro_averaged_stats["recall"]
+        #pred_micro_recalls.append(micro_recall)
+        #micro_f1 = micro_averaged_stats["f1-score"]
+        #pred_micro_f1s.append(micro_f1)
 
-        macro_averaged_stats = report_metrics["macro avg"]
-        macro_precision = macro_averaged_stats["precision"]
-        pred_macro_precisions.append(macro_precision)
-        macro_recall = macro_averaged_stats["recall"]
-        pred_macro_recalls.append(macro_recall)
-        macro_f1 = macro_averaged_stats["f1-score"]
-        pred_macro_f1s.append(macro_f1)
+        #macro_averaged_stats = report_metrics["macro avg"]
+        #macro_precision = macro_averaged_stats["precision"]
+        #pred_macro_precisions.append(macro_precision)
+        #macro_recall = macro_averaged_stats["recall"]
+        #pred_macro_recalls.append(macro_recall)
+        #macro_f1 = macro_averaged_stats["f1-score"]
+        #pred_macro_f1s.append(macro_f1)
 
             
- 
 
-        
-        
+
 
 
 class i2b2RelexClassifier(Classifier):

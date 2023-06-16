@@ -497,7 +497,6 @@ class TokenClassificationDataset(Dataset):
                 new_label.extend(new_l)
             new_label = [0] + new_label + [0]
             return new_label
-        
 
         df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False, quoting=csv.QUOTE_NONE)
         df['annotation'] = df['annotation'].apply(literal_eval)
