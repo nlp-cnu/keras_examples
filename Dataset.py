@@ -454,26 +454,33 @@ class BinaryTextClassificationDataset(Dataset):
             
 
 
-# TODO -- may need to expand for different format types. Right now it is for span start and span end format types
+# TODO -- may need to expand for different format types. Right now it is for span start and span end format types<- no its not, its for categorically encoded, we convert from categorical to one-hot withibn the code, so makeing this work witih one-hot should be straightforward
+#### -- TODO, this class is a mess
 class TokenClassificationDataset(Dataset):
 
-    def __init__(self, data_file_path, num_classes, tokenizer, seed=SEED, validation_set_size=0, max_num_tokens=512):
-        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
+    def __init__(self, data_file_path, num_classes, tokenizer, seed=SEED, validation_set_size=0, max_num_tokens=512, shuffle_data=True):
+        Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
         self.num_classes = num_classes
         self.df = self.preprocess(data_file_path, tokenizer)
 
         self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
 
+        # Convert from categorical encoding to binary encoding
         # Need to make a big array that is ixjxnum_classes, where i is the ith token, j is the number of tokens
         num_lost = 0
         num_samples = len(self.df['annotation'])
+        # TODO - check for labels for CLS and SEP tokens too ... make sure they have none
         for i in range(num_samples):
             num_tokens = len(self.df['annotation'][i])
             if num_tokens > max_num_tokens:
                 num_lost += num_tokens - max_num_tokens
             for j in range(num_tokens)[:max_num_tokens]:
-                positive_class_index = self.df['annotation'][i][j]
-                self.labels[i][j][int(positive_class_index)] = 1.0
+                # grab the class the token belongs to
+                true_class = self.df['annotation'][i][j]
+                # 0 indicates the None class, which we don't annotate, otherwise set the class to 1
+                if(true_class > 0):
+                    class_index = true_class - 1
+                    self.labels[i][j][int(class_index)] = 1.0
 
         self.data = self.df["text"].tolist()
         self._training_validation_split(self.data, self.labels)
@@ -481,7 +488,6 @@ class TokenClassificationDataset(Dataset):
 
     def preprocess(self, input_file, tokenizer):
         # Want to grab the training data, expand all the labels using the tokenizer
-        # Shuffle the samples, save to new file that will be called during training
         
         # Creates new label that accounts for the tokenization of a sample
         def tokenize_sample(sample, tokenizer):
@@ -498,7 +504,9 @@ class TokenClassificationDataset(Dataset):
             new_label = [0] + new_label + [0]
             return new_label
 
-        df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False, quoting=csv.QUOTE_NONE)
+        # assumes classes are encoded as a real number, so a single annotation per class
+        df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False,
+                         quoting=csv.QUOTE_NONE, encoding='utf-8')
         df['annotation'] = df['annotation'].apply(literal_eval)
         df['annotation'] = df.apply(tokenize_sample, tokenizer=tokenizer, axis=1)
 

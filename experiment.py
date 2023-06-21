@@ -176,7 +176,7 @@ def run_multiclass_text_classification_dataset():
 
 # Simple example to test multiclass token classification datasets
 def run_multiclass_token_classification_dataset(): 
-    data_filepath = '../../data/i2b2_ner/training_data.tsv'
+    data_filepath = '../../data/training_exp_data/i2b2/converted.tsv'
     language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
     num_classes = 3
     
@@ -184,9 +184,16 @@ def run_multiclass_token_classification_dataset():
     classifier = MultiClassTokenClassifier(language_model_name, num_classes)
 
     # load the data and split into train/validation
-    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.2)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.2, shuffle_data=False)
     train_x, train_y = data.get_train_data()
     val_x, val_y = data.get_validation_data()
+
+    class_names = ['problem','treatment','test']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, data, 'i2b2_brat')
+    exit()
+
+
+
     
     #train the model
     #Note: class_weights are not supported for 3D targets, so we can't do it for token classification, at least not how we currently have it set up    

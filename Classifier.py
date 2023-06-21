@@ -1,3 +1,4 @@
+import numpy as np
 from transformers import AutoTokenizer, TFAutoModel, TFBertModel
 import tensorflow as tf
 from tensorflow.keras.layers import *
@@ -10,6 +11,8 @@ from DataHandler import *
 from CustomCallbacks import *
 from Metrics import *
 from abc import ABC, abstractmethod
+
+import re
 
 class Classifier(ABC):
     '''
@@ -490,7 +493,7 @@ class MultiClassTokenClassifier(Classifier):
         :param y: the labels
         """
 
-        text = dataset.data  # the text data is new line separeted
+        #text = dataset.data  # the text data is new line separeted
         #labels = dataset.labels # the labels are the labels for each line, a 3-D matrix, where each 2-D matrix are
                                 # the labels for that line. Which is a vector for each token in the sentence
         # predictions are the same format as dataset.labels
@@ -504,15 +507,55 @@ class MultiClassTokenClassifier(Classifier):
 
         # create a document text to grab spans from
         document_text = ''
-        for text_line in text:
-            document_text += text_line
-
-        # iterate over each line
+        for text_line in x:
+            document_text += "\n" + text_line
+            
+        # iterate over each lines
         for x_line, y_line in zip(x, y):
+
+            # tokenize the line so that it corresponds with the labels
+            tokens = self.tokenizer(x_line, padding=True, truncation=True, max_length=self._max_length, return_tensors='tf')
+            tokens = self.tokenizer.convert_ids_to_tokens(tokens['input_ids'].numpy()[0])
+
+            # remove the CLS and SEP tokens and their labelss
+            del tokens[0]
+            del tokens[-1]
+            y_line = y_line.tolist()
+            del y_line[0]
+            del y_line[-1]
+            #TODO - do I need to remove CLS and SEP them from my labels too?
+
+            # count empty lines
+            if x_line == '':
+                print("Counting empty line")
+                previous_text_length += 1
+
             # iterate over each token in the line
-            for token, labels in zip(x_line, y_line):
+            for token, labels in zip(tokens, y_line):
                 # find the length of this text (used to update the previous text length)
-                this_text_length = len(token)
+                token_text = token.replace("##", "")  # remove word piece embedding characters
+                this_text_length = len(token_text)
+
+                # count white space characters and update the previous text length
+                # all other characters will get tokenized and are accounted for there
+                # TODO - if you want to keep emojis and stuff you will probably need to update this
+                # match any white space or weird characters (like UTF+FF3F)
+                matcher = re.compile('[^\w!@#$%^&*\(\)-_=+`~\[\]{}\\\|:;\"\'<>,.\?\/]+')
+                while matcher.match(document_text[previous_text_length]):
+                    previous_text_length += 1
+
+                # check that the labeled text matches the token text
+                span_start = previous_text_length
+                span_end = previous_text_length + this_text_length
+                span_text = document_text[span_start:span_end]
+                if span_text.lower() != token_text:
+                    print("Warning span and token text do not match:")
+                    print(f"   {span_start}, {span_end}")
+                    print(f"   *{span_text}*, *{token_text}*")
+                    print(ord(span_text[0]))
+                    exit()
+                #else:
+                #    print(f"   span and tokens match: {span_start}, {span_end} = {span_text}, {token_text}")
 
                 # output for each true class
                 for i in range(num_classes):
@@ -520,7 +563,6 @@ class MultiClassTokenClassifier(Classifier):
                         span_start = previous_text_length
                         span_end = previous_text_length + this_text_length
                         span_text = document_text[span_start:span_end]
-                        token_text = token
 
                         annotation = {}
                         annotation['class_name'] = class_names[i]
@@ -528,15 +570,11 @@ class MultiClassTokenClassifier(Classifier):
                         annotation['span_end'] = span_end
                         annotation['span_text'] = span_text
                         annotation['token_text'] = token_text
-
-                        if span_text != token_text:
-                            print(f"Warning span and token text do not match: {span_text}, {token_text}")
-
                         annotations.append(annotation)
 
                 # update the current span length
                 previous_text_length += this_text_length
-
+            # end reading this line
 
         # The previous code doesn't account for mult-token or multi-word spans
         # Here, merge any spans with the same label and adjacent span_end, span_starts
@@ -551,12 +589,21 @@ class MultiClassTokenClassifier(Classifier):
             if i+1 < len(annotations):
                 # Next, check if the next annotation is the same type
                 if annotations[i]['class_name'] == annotations[i+1]['class_name']:
-                    # Now, check if the annotations are adjacent in text
-                    if annotations[i]['end_span'] == annotations[i+1]['start_span'] - 1:
+                    # Now, check if the annotations are adjacent in text (with or without a space)
+                    if annotations[i]['span_end'] == annotations[i+1]['span_start']\
+                            or annotations[i]['span_end'] == annotations[i+1]['span_start']-1:
+
                         # These are a multi-token annotation, so merge them
-                        annotations[i]['end_span'] = annotations[i+1]['end_span']
-                        annotations[i]['span_text'] += annotations[i+1]['span_text']
-                        annotations[i]['token_text'] += annotations[i+1]['token_text']
+                        # determine if you need to add a space between token_texts
+                        add_space = ''
+                        if annotations[i]['span_end'] == annotations[i + 1]['span_start'] - 1:
+                            add_space = ' '
+                        # add the token texts
+                        annotations[i]['token_text'] += add_space + annotations[i + 1]['token_text']
+                        # update the span end
+                        annotations[i]['span_end'] = annotations[i+1]['span_end']
+                        # get the span text from the document
+                        annotations[i]['span_text'] = document_text[annotations[i]['span_start']:annotations[i]['span_end']]
 
                         # delete the i+1 annotation and record that a merge happend
                         del annotations[i+1]
@@ -568,13 +615,13 @@ class MultiClassTokenClassifier(Classifier):
                 i += 1
 
         # output the annotations and text
-        with open(output_name + '.txt') as f:
-            f.writelines(text)
+        with open(output_name + '.txt', 'wt') as f:
+            f.writelines(document_text)
 
-        with open(output_name + '.ann') as f:
+        with open(output_name + '.ann', 'wt') as f:
             entity_num = 1
             for annotation in annotations:
-                f.write(f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}")
+                f.write(f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}\n")
                 entity_num += 1
 
 
