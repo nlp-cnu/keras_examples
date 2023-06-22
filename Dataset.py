@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 import sklearn.utils
 import csv
 import sys
+import regex
 
 SEED = 3
 
@@ -47,7 +48,8 @@ class Dataset(ABC):
         #   self._train_Y = [self._train_Y[idx] for idx in idxs]
         #   self._train_X = self._train_X[idxs]
         
-        
+
+    # TODO - would it be better to return a dataset object and remove from this one?
     def _training_validation_split(self, data, labels):
         """
         Performs a stratified training-validation split
@@ -491,23 +493,57 @@ class TokenClassificationDataset(Dataset):
         
         # Creates new label that accounts for the tokenization of a sample
         def tokenize_sample(sample, tokenizer):
-            new_label = []
-            tok_lengths = [len(tok) - 2 for tok in tokenizer(sample['text'].split())['input_ids']]
+            # get a list containing the number of tokens per space seperated word (.split())
+            token_lengths = [len(tok) - 2 for tok in tokenizer(sample['text'].split())['input_ids']]
 
-            label = sample['annotation']
-            # this index is following the labels, but the tok_lengths index
-            # is one less because it does not account for the [CLS] and [SEP] tags
-            for i in range(len(label)):
-                l = label[i]
-                new_l = [l] * tok_lengths[i]
-                new_label.extend(new_l)
-            new_label = [0] + new_label + [0]
-            return new_label
+            # Create the new labels, which maps the space separated labels to token labels
+            new_labels = []
+
+            #add a 0 label for the [CLS] token
+            new_labels.append(0)
+
+            # extend each label to the number of tokens in that space separated "word"
+            labels = sample['annotation']
+            for i in range(len(labels)):
+                for j in range(token_lengths[i]):
+                    new_labels.append(labels[i])
+
+            # add a 0 label for the SEP token and return
+            new_labels.append(0)
+            return new_labels
+
+            # this was the previous code, but it had some bugs
+            #print("sample['text'] = ", sample['text'])
+            #labels = sample['annotation']
+            #new_labels = []
+            #for i in range(len(labels)):
+            #    label = labels[i]
+            #    new_label = [label] * token_lengths[i]
+            #    new_labels.extend(new_label)
+            #new_label = [0] + new_labels + [0]
+            #return new_label
 
         # assumes classes are encoded as a real number, so a single annotation per class
         df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False,
-                         quoting=csv.QUOTE_NONE, encoding='utf-8')
+                         quoting=csv.QUOTE_NONE)#, encoding='utf-8')
+
+        #replace non-standard space characters with a space
+        df['text'] = df['text'].apply(lambda x: regex.sub(r'\p{Zs}', ' ', x))
+
+        # replace non-ascii characters with *
+        #  if we just remove them then it can throw off the labels
+        for i in range(len(df['text'].values)):
+            text_list = list(df.iloc[i]['text'])
+            for j, char in enumerate(text_list):
+                if ord(char) > 127:
+                    # replace everything else with an asterisk
+                    text_list[j] = '*'
+            df.iloc[i]['text'] = "".join(text_list)
+
+
+        # convert the annotation to numbers
         df['annotation'] = df['annotation'].apply(literal_eval)
+        # expand the annotations to match the tokens (a word may be multiple tokens)
         df['annotation'] = df.apply(tokenize_sample, tokenizer=tokenizer, axis=1)
 
         # See if you can just return this new dataframe, instead of saving all of this extra data

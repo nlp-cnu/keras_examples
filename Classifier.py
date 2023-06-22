@@ -472,7 +472,7 @@ class MultiClassTokenClassifier(Classifier):
         return self.model.predict(x, batch_size=batch_size)
 
 
-    def convert_predictions_to_brat_format(self, x, y, class_names, dataset, output_name):
+    def convert_predictions_to_brat_format(self, x, y, class_names, output_name, max_length=_self.max_length):
         """
         converts text and labels to brat format, which consists of two files.
            A .txt file containing the text
@@ -489,18 +489,13 @@ class MultiClassTokenClassifier(Classifier):
             -- Span starts and ends start counting at the beginning of the document. New line characters are counted
         - Text the text contained within the span (useful for debugging)
 
-        :param x: the input text
-        :param y: the labels
+        :param x: a list (or array) of text (as contained in the Dataset object)
+        :param y: an array of labels (as contained in the Dataset object)
+        :param output_name: the name of the files to output (.ann and .txt are appended)
+        :param max_length: the max_length of the tokens - set to None if outputting the gold standard
         """
-
-        #text = dataset.data  # the text data is new line separeted
-        #labels = dataset.labels # the labels are the labels for each line, a 3-D matrix, where each 2-D matrix are
-                                # the labels for that line. Which is a vector for each token in the sentence
-        # predictions are the same format as dataset.labels
-
         # There may be a mismatch between labels and text because the labels are based on tokenized data
         # So, we need to map the tokenized text to the original text and create our spans accordingly
-
         num_classes = len(class_names)
         previous_text_length = 0
         annotations = []
@@ -512,18 +507,19 @@ class MultiClassTokenClassifier(Classifier):
             
         # iterate over each lines
         for x_line, y_line in zip(x, y):
-
             # tokenize the line so that it corresponds with the labels
-            tokens = self.tokenizer(x_line, padding=True, truncation=True, max_length=self._max_length, return_tensors='tf')
+            if max_length is None:
+                tokens = self.tokenizer(x_line, return_tensors='tf')
+            else:
+                tokens = self.tokenizer(x_line, return_tensors='tf', max_length=max_length)
             tokens = self.tokenizer.convert_ids_to_tokens(tokens['input_ids'].numpy()[0])
 
-            # remove the CLS and SEP tokens and their labelss
+            # remove the CLS and SEP tokens and their labels
             del tokens[0]
             del tokens[-1]
             y_line = y_line.tolist()
             del y_line[0]
             del y_line[-1]
-            #TODO - do I need to remove CLS and SEP them from my labels too?
 
             # count empty lines
             if x_line == '':
@@ -531,16 +527,17 @@ class MultiClassTokenClassifier(Classifier):
                 previous_text_length += 1
 
             # iterate over each token in the line
-            for token, labels in zip(tokens, y_line):
+            for token, labels in zip(tokens, y_line):  # TODO - zipping these together will truncate the text (if its longer)
                 # find the length of this text (used to update the previous text length)
                 token_text = token.replace("##", "")  # remove word piece embedding characters
                 this_text_length = len(token_text)
 
                 # count white space characters and update the previous text length
                 # all other characters will get tokenized and are accounted for there
-                # TODO - if you want to keep emojis and stuff you will probably need to update this
                 # match any white space or weird characters (like UTF+FF3F)
-                matcher = re.compile('[^\w!@#$%^&*\(\)-_=+`~\[\]{}\\\|:;\"\'<>,.\?\/]+')
+                # Note: if you want to keep emojis and stuff you will probably need to update this
+                #matcher = re.compile('[^\w!@#$%^&*\(\)-_=+`~\[\]{}\\\|:;\"\'<>,.\?\/]+')
+                matcher = re.compile('\s')  #—™…’“”®
                 while matcher.match(document_text[previous_text_length]):
                     previous_text_length += 1
 
@@ -548,12 +545,16 @@ class MultiClassTokenClassifier(Classifier):
                 span_start = previous_text_length
                 span_end = previous_text_length + this_text_length
                 span_text = document_text[span_start:span_end]
+
                 if span_text.lower() != token_text:
-                    print("Warning span and token text do not match:")
-                    print(f"   {span_start}, {span_end}")
-                    print(f"   *{span_text}*, *{token_text}*")
-                    print(ord(span_text[0]))
-                    exit()
+                    if token_text == '[UNK]':
+                        print(f"unknown token: {span_text}")
+                    else:
+                        print("Warning span and token text do not match:")
+                        print(f"    {x_line}")
+                        print(f"   {span_start}, {span_end}")
+                        print(f"   *{span_text}*, *{token_text}*")
+                        exit()
                 #else:
                 #    print(f"   span and tokens match: {span_start}, {span_end} = {span_text}, {token_text}")
 
@@ -578,7 +579,6 @@ class MultiClassTokenClassifier(Classifier):
 
         # The previous code doesn't account for mult-token or multi-word spans
         # Here, merge any spans with the same label and adjacent span_end, span_starts
-        entity_num = 1
         i = 0
         while i < len(annotations):
             # record if a merge happens
@@ -624,29 +624,6 @@ class MultiClassTokenClassifier(Classifier):
                 f.write(f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}\n")
                 entity_num += 1
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    import sklearn
     def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3):
         """
         Evaluates the predictions against true values. Does not consider the None class
@@ -660,6 +637,8 @@ class MultiClassTokenClassifier(Classifier):
         # set up variables
         p = pred_y
         g = true_y
+        # These are used to collect the metrics. It is useful if you wanto
+        # to write them to file, but currently not used
         pred_micro_precisions = []
         pred_macro_precisions = []
         pred_micro_recalls = []
@@ -686,7 +665,7 @@ class MultiClassTokenClassifier(Classifier):
                 for s in sample_gt:
                     gt_final.append(s.tolist())
 
-                sample_pred = (sample_pred == sample_pred.max(axis=1)[:,None]).astype(int)
+                sample_pred = (sample_pred == sample_pred.max(axis=1)[:, None]).astype(int)
                 sample_pred = sample_pred[:trim_index, :]
                 for s in sample_pred:
                     pred_final.append(s.tolist())

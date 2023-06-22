@@ -172,7 +172,105 @@ def run_multiclass_text_classification_dataset():
     print(sklearn.metrics.classification_report(val_y, predicted_labels,
                                                 target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
           
-          
+
+
+
+def output_gold_standard_brat_formats_for_ner():
+    language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
+
+    # max_lengths are set really high because we don't want to truncate any labels
+    # if in our predictions we do truncate, we need to be penalized for that
+
+    # convert ademiner
+    data_filepath = '../../data/training_exp_data/ademiner/converted.tsv'
+    num_classes = 1
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False)
+    train_x, train_y = data.get_train_data()
+    class_names = ['ade']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'ademiner_brat', max_length=None)
+
+    # convert bc7dcpi
+    data_filepath = '../../data/training_exp_data/bc7dcpi/converted.tsv'
+    num_classes = 2
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['chemical', 'gene']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'bc7dcpi_brat', max_length=None)
+
+    # convert bc7med
+    data_filepath = '../../data/training_exp_data/bc7med/converted.tsv'
+    num_classes = 1
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['medication']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'bc7med_brat', max_length=None)
+
+    # convert cdr
+    data_filepath = '../../data/training_exp_data/cdr/converted.tsv'
+    num_classes = 2
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['chemical', 'disease']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'cdr_brat', max_length=None)
+
+    # convert cometa
+    data_filepath = '../../data/training_exp_data/cometa/converted.tsv'
+    num_classes = 1
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['biomedical_entity']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'cometa_brat', max_length=None)
+
+    # convert i2b2
+    data_filepath = '../../data/training_exp_data/i2b2/converted.tsv'
+    num_classes = 3
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['problem', 'treatment', 'test']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'i2b2_brat', max_length=None)
+
+    # convert n2c2
+    data_filepath = '../../data/training_exp_data/n2c2/converted.tsv'
+    num_classes = 9
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['drug', 'strength', 'form', 'dosage', 'frequency', 'route', 'duration', 'reason', 'ade']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'n2c2_brat', max_length=None)
+
+    # convert ncbi
+    data_filepath = '../../data/training_exp_data/ncbi/converted.tsv'
+    num_classes = 4
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['modifier', 'specific_disease', 'disease_class', 'composite_mention']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'ncbi_brat', max_length=None)
+
+    # convert nlmchem
+    data_filepath = '../../data/training_exp_data/nlmchem/converted.tsv'
+    num_classes = 1
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.0,
+                                      shuffle_data=False, max_num_tokens=99999)
+    train_x, train_y = data.get_train_data()
+    class_names = ['chemical']
+    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, 'nlmchem_brat', max_length=None)
+
 
 # Simple example to test multiclass token classification datasets
 def run_multiclass_token_classification_dataset(): 
@@ -184,19 +282,14 @@ def run_multiclass_token_classification_dataset():
     classifier = MultiClassTokenClassifier(language_model_name, num_classes)
 
     # load the data and split into train/validation
-    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer, validation_set_size=0.2, shuffle_data=False)
+    data = TokenClassificationDataset(data_filepath, num_classes, classifier.tokenizer,
+                                      validation_set_size=0.2, shuffle_data=True)
     train_x, train_y = data.get_train_data()
     val_x, val_y = data.get_validation_data()
 
-    class_names = ['problem','treatment','test']
-    classifier.convert_predictions_to_brat_format(train_x, train_y, class_names, data, 'i2b2_brat')
-    exit()
-
-
-
-    
     #train the model
-    #Note: class_weights are not supported for 3D targets, so we can't do it for token classification, at least not how we currently have it set up    
+    #Note: class_weights are not supported for 3D targets, so we can't do it for token classification,
+    # at least not how we currently have it set up
     classifier.train(train_x, train_y,
                      validation_data=(val_x, val_y)       
     )
@@ -214,5 +307,5 @@ if __name__ == '__main__':
     #run_binary_text_classification_dataset()
     #run_multilabel_text_classification_dataset()
     #run_multiclass_text_classification_dataset()
-    run_multiclass_token_classification_dataset()
-    
+    #run_multiclass_token_classification_dataset()
+    output_gold_standard_brat_formats_for_ner()
