@@ -11,6 +11,8 @@ import csv
 import sys
 import regex
 
+import Classifier
+
 SEED = 3
 
 #Abstract dataset class

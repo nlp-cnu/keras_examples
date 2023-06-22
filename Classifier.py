@@ -6,13 +6,13 @@ from tensorflow.keras import Model
 import tensorflow_addons as tfa
 import os
 
-
 from DataHandler import *
 from CustomCallbacks import *
 from Metrics import *
 from abc import ABC, abstractmethod
 
 import re
+
 
 class Classifier(ABC):
     '''
@@ -35,8 +35,8 @@ class Classifier(ABC):
     correctly, and also allows for variable length batches, which massively
     increases the speed of training.
     '''
-    #These are some of the HuggingFace Models which you can use
-    #general models
+    # These are some of the HuggingFace Models which you can use
+    # general models
     BASEBERT = 'bert-base-uncased'
     DISTILBERT = 'distilbert-base-uncased'
     ROBERTA = 'roberta-base'
@@ -58,20 +58,21 @@ class Classifier(ABC):
     DISCHARGE_SUMMARY_BERT = './models/bert_pretrain_output_disch_100000'
     BIOCLINICAL_BERT = './models/biobert_pretrain_output_all_notes_150000'
     BIODISCHARGE_SUMMARY_BERT = './models/biobert_pretrain_output_disch_100000'
-    
-    #some default parameter values
+
+    # some default parameter values
     EPOCHS = 100
     BATCH_SIZE = 20
     MAX_LENGTH = 512
-    #Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
+    # Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
     #      For BERT its 512
     LEARNING_RATE = 1e-5
     DROPOUT_RATE = 0.8
     LANGUAGE_MODEL_TRAINABLE = True
     MODEL_OUT_FILE_NAME = ''
-    
+
     @abstractmethod
-    def __init__(self, language_model_name, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
+    def __init__(self, language_model_name, language_model_trainable=LANGUAGE_MODEL_TRAINABLE, max_length=MAX_LENGTH,
+                 learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
         '''
         Initializer for a language model. This class should be extended, and
         the model should be built in the constructor. This constructor does
@@ -85,14 +86,14 @@ class Classifier(ABC):
         self._language_model_name = language_model_name
         self._language_model_trainable = language_model_trainable
         self._max_length = max_length
-        self._learning_rate=learning_rate
-        self._dropout_rate=dropout_rate
+        self._learning_rate = learning_rate
+        self._dropout_rate = dropout_rate
         self.tokenizer = AutoTokenizer.from_pretrained(self._language_model_name)
 
     def load_language_model(self):
 
-        #language_model = TFBertModel.from_pretrained('lm_weights_test_weights_out')
-        
+        # language_model = TFBertModel.from_pretrained('lm_weights_test_weights_out')
+
         # either load the language model locally or grab it from huggingface
         if os.path.isdir(self._language_model_name):
             language_model = TFBertModel.from_pretrained(self._language_model_name, from_pt=True)
@@ -103,13 +104,13 @@ class Classifier(ABC):
         # set properties
         language_model.trainable = self._language_model_trainable
         language_model.output_hidden_states = False
-        
-        #return the loaded model
+
+        # return the loaded model
         self.language_model = language_model
         return language_model
 
-
-    def set_up_callbacks(self, early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data):
+    def set_up_callbacks(self, early_stopping_monitor, early_stopping_mode, early_stopping_patience,
+                         model_out_file_name, restore_best_weights, test_data):
         # set up callbacks
         callbacks = []
         if test_data is not None:
@@ -119,29 +120,32 @@ class Classifier(ABC):
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
-            #try to correctly set the early stopping mode
+            # try to correctly set the early stopping mode
             #  (checks if it should stop when increasing (max) or decreasing (min)
             if early_stopping_mode == '':
                 if 'loss' in early_stopping_monitor.lower():
-                    early_stopping_mode='min'
+                    early_stopping_mode = 'min'
                 elif 'f1' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
+                    early_stopping_mode = 'max'
                 elif 'prec' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
+                    early_stopping_mode = 'max'
                 elif 'rec' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
+                    early_stopping_mode = 'max'
                 elif 'acc' in early_stopping_monitor.lower():
-                    early_stopping_mode='max'
+                    early_stopping_mode = 'max'
                 else:
-                    early_stopping_mode='auto'    
-                print ("early_stopping_mode automatically set to " + str(early_stopping_mode))
-            
-            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=early_stopping_patience, restore_best_weights=restore_best_weights, mode=early_stopping_mode))
+                    early_stopping_mode = 'auto'
+                print("early_stopping_mode automatically set to " + str(early_stopping_mode))
+
+            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=early_stopping_patience,
+                                           restore_best_weights=restore_best_weights, mode=early_stopping_mode))
 
         return callbacks
-    
-        
-    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS, model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5, restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None, training_data_handler=None, validation_data_handler=None):
+
+    def train(self, x, y, batch_size=BATCH_SIZE, validation_data=None, epochs=EPOCHS,
+              model_out_file_name=MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=5,
+              restore_best_weights=True, early_stopping_mode='', class_weights=None, test_data=None,
+              training_data_handler=None, validation_data_handler=None):
         '''
         Trains the classifier
         :param x: the training data
@@ -157,17 +161,19 @@ class Classifier(ABC):
 
         # create the training data handler unless a special one was passed in
         if training_data_handler is None:
-            #create a DataHAndler from the training data
+            # create a DataHAndler from the training data
             training_data_handler = TextClassificationDataHandler(x, y, batch_size, self)
-        
+
         # create the validation data handler if there is validation data
         if validation_data is not None:
             if validation_data_handler is None:
-                validation_data_handler = TextClassificationDataHandler(validation_data[0], validation_data[1], batch_size, self)        
-        
-        # get the callbacks
-        callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience, model_out_file_name, restore_best_weights, test_data)
-                
+                validation_data_handler = TextClassificationDataHandler(validation_data[0], validation_data[1],
+                                                                        batch_size, self)
+
+                # get the callbacks
+        callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience,
+                                          model_out_file_name, restore_best_weights, test_data)
+
         # fit the model to the training data
         self.model.fit(
             training_data_handler,
@@ -178,8 +184,7 @@ class Classifier(ABC):
             callbacks=callbacks
         )
 
-
-    #function to predict using the NN
+    # function to predict using the NN
     def predict(self, x, batch_size=BATCH_SIZE):
         """
         Predicts labels for data
@@ -187,25 +192,25 @@ class Classifier(ABC):
         :return: predictions
         """
         if not isinstance(x, tf.keras.utils.Sequence):
-            tokenized = self.tokenizer(x, padding=True, truncation=True, max_length=self._max_length, return_tensors='tf')
+            tokenized = self.tokenizer(x, padding=True, truncation=True, max_length=self._max_length,
+                                       return_tensors='tf')
             x = (tokenized['input_ids'], tokenized['attention_mask'])
 
         return self.model.predict(x, batch_size=batch_size)
 
-
-    #function to save the model weights
+    # function to save the model weights
     def save_weights(self, filepath):
         """
         Saves the model weights
         :return: None
         """
         # if you want to just save the language model weights, you can
-        #self.language_model.save_pretrained("lm_weights_"+filepath)
+        # self.language_model.save_pretrained("lm_weights_"+filepath)
 
         # but, mostly we just want to save the entire model's weights
         self.model.save_weights(filepath)
 
-    #function to load the model weights
+    # function to load the model weights
     def load_weights(self, filepath):
         """
         Loads weights for the model
@@ -220,66 +225,69 @@ class Classifier(ABC):
 
 
 class BinaryTextClassifier(Classifier):
-    
-    def __init__(self, language_model_name, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
-        #create the language model
+
+    def __init__(self, language_model_name, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
+                 max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
+                 dropout_rate=Classifier.DROPOUT_RATE):
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
+                            max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        # create the language model
         language_model = self.load_language_model()
 
-        #print the GPUs that tensorflow can find, and enable memory growth.
+        # print the GPUs that tensorflow can find, and enable memory growth.
         # memory growth is something that CJ had to do, but doesn't work for me
         # set memory growth prevents tensor flow from just grabbing all available VRAM
-        #physical_devices = tf.config.list_physical_devices('GPU')
-        #print (physical_devices)
-        #tf.config.experimental.set_memory_growth(physical_devices[0], True)
-        
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
+        # physical_devices = tf.config.list_physical_devices('GPU')
+        # print (physical_devices)
+        # tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+        # create the model
+        # create the input layer, it contains the input ids (from tokenizer) and the
         # the padding mask (which masks padded values)
         input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
         input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
 
-        #create the embeddings - the 0th index is the last hidden layer
+        # create the embeddings - the 0th index is the last hidden layer
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
 
-        #We can create a sentence embedding using the one directly from BERT, or using a biLSTM
+        # We can create a sentence embedding using the one directly from BERT, or using a biLSTM
         # OR, we can return the sequence from BERT (just don't slice) or the BiLSTM (use retrun_sequences=True)
-        #create the sentence embedding layer - using the BERT sentence representation (cls token)
-        sentence_representation_language_model = embeddings[:,0,:]
-        #Note: we are slicing because this is a sentence classification task. We only need the cls predictions
+        # create the sentence embedding layer - using the BERT sentence representation (cls token)
+        sentence_representation_language_model = embeddings[:, 0, :]
+        # Note: we are slicing because this is a sentence classification task. We only need the cls predictions
         # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
         # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
 
-        #Alternatively, we can use a biLSTM to create a sentence representation -- This seems to generally work better
-        #create the sentence embedding layer using a biLSTM and BERT token representations
-        #lstm_size=128
-        #biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
-        #sentence_representation_biLSTM = biLSTM_layer(embeddings)
+        # Alternatively, we can use a biLSTM to create a sentence representation -- This seems to generally work better
+        # create the sentence embedding layer using a biLSTM and BERT token representations
+        # lstm_size=128
+        # biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
+        # sentence_representation_biLSTM = biLSTM_layer(embeddings)
 
         dense1 = tf.keras.layers.Dense(128, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_language_model))
 
-
         sigmoid_layer = tf.keras.layers.Dense(1, activation='sigmoid')
         final_output = sigmoid_layer(output1)
-    
-        #combine the language model with the classificaiton part
+
+        # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-    
-        #compile the model
+
+        # compile the model
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
-            metrics =['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), tfa.metrics.F1Score(1)]
+            metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), tfa.metrics.F1Score(1)]
         )
 
-        
+
 class MultiLabelTextClassifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
+                 max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
+                 dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This is identical to the Binary_Text_Classifier, except the last layer uses
         a softmax, loss is Categorical Cross Entropy and its output dimension is num_classes
@@ -287,41 +295,41 @@ class MultiLabelTextClassifier(Classifier):
         You also need to make sure that the class input is the correct dimensionality by
         using Dataset TODO --- need to write a new class?
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
+                            max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         # set instance attributes
         self._num_classes = num_classes
-                
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
+
+        # create the model
+        # create the input layer, it contains the input ids (from tokenizer) and the
         # the padding mask (which masks padded values)
         input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
         input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
- 
+
         # create the language model
         language_model = self.load_language_model()
-        
-        #create the embeddings - the 0th index is the last hidden layer
-        cls_token = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
+
+        # create the embeddings - the 0th index is the last hidden layer
+        cls_token = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:, 0, :]
 
         # TODO - dropout is not used here
-        #dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        #output1 = dropout1(dense1(sentence_representation_language_model))
+        # dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        # output1 = dropout1(dense1(sentence_representation_language_model))
 
-        
-        #sigmoid
+        # sigmoid
         sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
         final_output = sigmoid_layer(cls_token)
-    
-        #combine the language model with the classificaiton part
+
+        # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-        
-        #create the optimizer
+
+        # create the optimizer
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
 
         # create the merics
         my_metrics = MyMultiLabelTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
-        
+
         # compile the model
         self.model.compile(
             optimizer=optimizer,
@@ -331,44 +339,46 @@ class MultiLabelTextClassifier(Classifier):
 
 
 class MultiClassTextClassifier(Classifier):
-    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
+                 max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
+                 dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This is identical to the MultiLabel_Text_Classifier, except the last layer uses
         a softmax, loss is Categorical Cross Entropy
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
+                            max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
-    
-        #create the language model
+
+        # create the language model
         language_model = self.load_language_model()
 
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
+        # create the model
+        # create the input layer, it contains the input ids (from tokenizer) and the
         # the padding mask (which masks padded values)
         input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
         input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
 
-        #create the embeddings - the 0th index is the last hidden layer
+        # create the embeddings - the 0th index is the last hidden layer
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
-        
-        #In this example, we use a biLSTM to generate a sentence representation. We could use
+
+        # In this example, we use a biLSTM to generate a sentence representation. We could use
         # the langugae model directly (see multi-label text classifier)
-        lstm_size=128
+        lstm_size = 128
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
-        
-        #now, create a dense layers
-        #dense 1
+
+        # now, create a dense layers
+        # dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
-       
-        #softmax
+
+        # softmax
         softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
         final_output = softmax_layer(output1)
-        
-        #combine the language model with the classificaiton part
+
+        # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
         # create the optimizer
@@ -377,8 +387,8 @@ class MultiClassTextClassifier(Classifier):
         # set up the metrics
         my_metrics = MyMultiClassTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
-        
-        #compile the model
+
+        # compile the model
         self.model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
@@ -386,39 +396,41 @@ class MultiClassTextClassifier(Classifier):
         )
 
 
-
-#Multilabel token classification is also possible, but unlikely, so I deleted it. If
+# Multilabel token classification is also possible, but unlikely, so I deleted it. If
 # it gets implemented in the future, don't forget to do the correct squashing function
 # for the final layer (softmax) and correct loss (CCE)
 class MultiClassTokenClassifier(Classifier):
-    
-    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
+                 max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
+                 dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This Classifier is for multiclass token classification tasks
         '''
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
+                            max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
-        
-        #create the language model
+
+        # create the language model
         language_model = self.load_language_model()
 
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
+        # create the model
+        # create the input layer, it contains the input ids (from tokenizer) and the
         # the padding mask (which masks padded values)
         input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
         input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
 
-        #create the embeddings - the 0th index is the last hidden layer
+        # create the embeddings - the 0th index is the last hidden layer
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
 
-        #softmax
+        # softmax
         softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
         final_output = softmax_layer(embeddings)
-    
-        #combine the language model with the classificaiton part
+
+        # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-    
-        #create the optimizer, metrics, and compile the model
+
+        # create the optimizer, metrics, and compile the model
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
         my_metrics = MyMultiClassTokenClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
@@ -438,18 +450,19 @@ class MultiClassTokenClassifier(Classifier):
         '''
         # create the training data handler unless a special one was passed in
         if training_data_handler is None:
-            #create a DataHandler from the training data
+            # create a DataHandler from the training data
             training_data_handler = TokenClassifierDataHandler(x, y, batch_size, self)
-        
+
         # create the validation data handler if there is validation data
         if validation_data is not None:
             if validation_data_handler is None:
-                validation_data_handler = TokenClassifierDataHandler(validation_data[0], validation_data[1], batch_size, self)
+                validation_data_handler = TokenClassifierDataHandler(validation_data[0], validation_data[1], batch_size,
+                                                                     self)
 
         # get the callbacks
         callbacks = self.set_up_callbacks(early_stopping_monitor, early_stopping_mode, early_stopping_patience,
                                           model_out_file_name, restore_best_weights, test_data)
-                
+
         # fit the model to the training data
         self.model.fit(
             training_data_handler,
@@ -467,12 +480,12 @@ class MultiClassTokenClassifier(Classifier):
         :return: predictions
         """
         if not isinstance(x, tf.keras.utils.Sequence):
-            tokenized = self.tokenizer(list(x), padding=True, truncation=True, max_length=self._max_length, return_tensors='tf')
+            tokenized = self.tokenizer(list(x), padding=True, truncation=True, max_length=self._max_length,
+                                       return_tensors='tf')
             x = (tokenized['input_ids'], tokenized['attention_mask'])
         return self.model.predict(x, batch_size=batch_size)
 
-
-    def convert_predictions_to_brat_format(self, x, y, class_names, output_name, max_length=_self.max_length):
+    def convert_predictions_to_brat_format(self, x, y, class_names, output_name, max_length=Classifier.MAX_LENGTH):
         """
         converts text and labels to brat format, which consists of two files.
            A .txt file containing the text
@@ -491,6 +504,7 @@ class MultiClassTokenClassifier(Classifier):
 
         :param x: a list (or array) of text (as contained in the Dataset object)
         :param y: an array of labels (as contained in the Dataset object)
+        :param class_names: the names of the classes (to be output to brat format)
         :param output_name: the name of the files to output (.ann and .txt are appended)
         :param max_length: the max_length of the tokens - set to None if outputting the gold standard
         """
@@ -504,7 +518,7 @@ class MultiClassTokenClassifier(Classifier):
         document_text = ''
         for text_line in x:
             document_text += "\n" + text_line
-            
+
         # iterate over each lines
         for x_line, y_line in zip(x, y):
             # tokenize the line so that it corresponds with the labels
@@ -527,7 +541,8 @@ class MultiClassTokenClassifier(Classifier):
                 previous_text_length += 1
 
             # iterate over each token in the line
-            for token, labels in zip(tokens, y_line):  # TODO - zipping these together will truncate the text (if its longer)
+            for token, labels in zip(tokens,
+                                     y_line):  # TODO - zipping these together will truncate the text (if its longer)
                 # find the length of this text (used to update the previous text length)
                 token_text = token.replace("##", "")  # remove word piece embedding characters
                 this_text_length = len(token_text)
@@ -536,8 +551,8 @@ class MultiClassTokenClassifier(Classifier):
                 # all other characters will get tokenized and are accounted for there
                 # match any white space or weird characters (like UTF+FF3F)
                 # Note: if you want to keep emojis and stuff you will probably need to update this
-                #matcher = re.compile('[^\w!@#$%^&*\(\)-_=+`~\[\]{}\\\|:;\"\'<>,.\?\/]+')
-                matcher = re.compile('\s')  #—™…’“”®
+                # matcher = re.compile('[^\w!@#$%^&*\(\)-_=+`~\[\]{}\\\|:;\"\'<>,.\?\/]+')
+                matcher = re.compile('\s')  # —™…’“”®
                 while matcher.match(document_text[previous_text_length]):
                     previous_text_length += 1
 
@@ -555,7 +570,7 @@ class MultiClassTokenClassifier(Classifier):
                         print(f"   {span_start}, {span_end}")
                         print(f"   *{span_text}*, *{token_text}*")
                         exit()
-                #else:
+                # else:
                 #    print(f"   span and tokens match: {span_start}, {span_end} = {span_text}, {token_text}")
 
                 # output for each true class
@@ -586,12 +601,12 @@ class MultiClassTokenClassifier(Classifier):
 
             # check if this is a multi-token or multi-word span
             # First, check if there is a next annotations
-            if i+1 < len(annotations):
+            if i + 1 < len(annotations):
                 # Next, check if the next annotation is the same type
-                if annotations[i]['class_name'] == annotations[i+1]['class_name']:
+                if annotations[i]['class_name'] == annotations[i + 1]['class_name']:
                     # Now, check if the annotations are adjacent in text (with or without a space)
-                    if annotations[i]['span_end'] == annotations[i+1]['span_start']\
-                            or annotations[i]['span_end'] == annotations[i+1]['span_start']-1:
+                    if annotations[i]['span_end'] == annotations[i + 1]['span_start'] \
+                            or annotations[i]['span_end'] == annotations[i + 1]['span_start'] - 1:
 
                         # These are a multi-token annotation, so merge them
                         # determine if you need to add a space between token_texts
@@ -601,12 +616,13 @@ class MultiClassTokenClassifier(Classifier):
                         # add the token texts
                         annotations[i]['token_text'] += add_space + annotations[i + 1]['token_text']
                         # update the span end
-                        annotations[i]['span_end'] = annotations[i+1]['span_end']
+                        annotations[i]['span_end'] = annotations[i + 1]['span_end']
                         # get the span text from the document
-                        annotations[i]['span_text'] = document_text[annotations[i]['span_start']:annotations[i]['span_end']]
+                        annotations[i]['span_text'] = document_text[
+                                                      annotations[i]['span_start']:annotations[i]['span_end']]
 
                         # delete the i+1 annotation and record that a merge happend
-                        del annotations[i+1]
+                        del annotations[i + 1]
                         merged = True
 
             # only update i if a merge didn't happen. This is because we want to iteratively
@@ -621,7 +637,8 @@ class MultiClassTokenClassifier(Classifier):
         with open(output_name + '.ann', 'wt') as f:
             entity_num = 1
             for annotation in annotations:
-                f.write(f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}\n")
+                f.write(
+                    f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}\n")
                 entity_num += 1
 
     def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3):
@@ -678,90 +695,90 @@ class MultiClassTokenClassifier(Classifier):
         g = g.reshape((-1, self._num_classes))[:, 1:]
 
         # Calculating the metrics w/ sklearn
-        #target_names = list(class_map)[1:]
-        report_metrics = sklearn.metrics.classification_report(g, p, target_names=class_names, digits=decimal_places)#, output_dict=True)
+        # target_names = list(class_map)[1:]
+        report_metrics = sklearn.metrics.classification_report(g, p, target_names=class_names,
+                                                               digits=decimal_places)  # , output_dict=True)
 
         # collecting the reported metrics (useful if you want to output them, but not used now)
-        #micro_averaged_stats = report_metrics["micro avg"]
-        #micro_precision = micro_averaged_stats["precision"]
-        #pred_micro_precisions.append(micro_precision)
-        #micro_recall = micro_averaged_stats["recall"]
-        #pred_micro_recalls.append(micro_recall)
-        #micro_f1 = micro_averaged_stats["f1-score"]
-        #pred_micro_f1s.append(micro_f1)
+        # micro_averaged_stats = report_metrics["micro avg"]
+        # micro_precision = micro_averaged_stats["precision"]
+        # pred_micro_precisions.append(micro_precision)
+        # micro_recall = micro_averaged_stats["recall"]
+        # pred_micro_recalls.append(micro_recall)
+        # micro_f1 = micro_averaged_stats["f1-score"]
+        # pred_micro_f1s.append(micro_f1)
 
-        #macro_averaged_stats = report_metrics["macro avg"]
-        #macro_precision = macro_averaged_stats["precision"]
-        #pred_macro_precisions.append(macro_precision)
-        #macro_recall = macro_averaged_stats["recall"]
-        #pred_macro_recalls.append(macro_recall)
-        #macro_f1 = macro_averaged_stats["f1-score"]
-        #pred_macro_f1s.append(macro_f1)
-
-            
-
-
+        # macro_averaged_stats = report_metrics["macro avg"]
+        # macro_precision = macro_averaged_stats["precision"]
+        # pred_macro_precisions.append(macro_precision)
+        # macro_recall = macro_averaged_stats["recall"]
+        # pred_macro_recalls.append(macro_recall)
+        # macro_f1 = macro_averaged_stats["f1-score"]
+        # pred_macro_f1s.append(macro_f1)
 
 
 class i2b2RelexClassifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
-        
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
+                 max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
+                 dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
+                            max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+
         # set instance attributes
         self._num_classes = num_classes
 
-        #physical_devices = tf.config.list_physical_devices('GPU')
-        #print (physical_devices)
-        
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
+        # physical_devices = tf.config.list_physical_devices('GPU')
+        # print (physical_devices)
+
+        # create the model
+        # create the input layer, it contains the input ids (from tokenizer) and the
         # the padding mask (which masks padded values)
         input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
         input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
- 
+
         # create the language model
         language_model = self.load_language_model()
-        
-        #create and grab the sentence embedding (the CLS token)
-        sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
 
-        #TODO - experiment with noise layer --- it seems like it takes forever to train with it. What is going on?
+        # create and grab the sentence embedding (the CLS token)
+        sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:, 0, :]
+
+        # TODO - experiment with noise layer --- it seems like it takes forever to train with it. What is going on?
         if noise_rate > 0:
             noise_layer = tf.keras.layers.GaussianNoise(0.1)
             sentence_representation = noise_layer(sentence_representation)
-  
-        #now, create some dense layers
-        #dense 1
+
+        # now, create some dense layers
+        # dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation))
-    
-        #dense 2
+
+        # dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
         dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
         output2 = dropout2(dense2(output1))
 
-        #dense 3
+        # dense 3
         dense3 = tf.keras.layers.Dense(64, activation='gelu')
         dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
         output3 = dropout3(dense3(output2))
 
-        #softmax
+        # softmax
         sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
         final_output = sigmoid_layer(output3)
-    
-        #combine the language model with the classificaiton part
+
+        # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-        
-        #create the optimizer
+
+        # create the optimizer
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
 
         # create the merics
         my_metrics = MyMultiLabelTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
-        
-        #compile the model
+
+        # compile the model
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
@@ -769,46 +786,48 @@ class i2b2RelexClassifier(Classifier):
         )
 
 
-
 class n2c2RelexClassifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
-        
+    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
+                 max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
+                 dropout_rate=Classifier.DROPOUT_RATE, noise_rate=0):
+        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
+                            max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+
         # set instance attributes
         self._num_classes = num_classes
 
-        #physical_devices = tf.config.list_physical_devices('GPU')
-        #print (physical_devices)
-        
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
+        # physical_devices = tf.config.list_physical_devices('GPU')
+        # print (physical_devices)
+
+        # create the model
+        # create the input layer, it contains the input ids (from tokenizer) and the
         # the padding mask (which masks padded values)
         input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
         input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
- 
+
         # create the language model
         language_model = self.load_language_model()
-        
+
         # create and grab the sentence embedding (the CLS token)
-        sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
+        sentence_representation = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:, 0, :]
 
         # add the output layer
         softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
         final_output = softmax_layer(sentence_representation)
-    
+
         # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-        
-        #create the optimizer
+
+        # create the optimizer
         optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
 
         # create the merics
-        #from Metrics import MyMetrics
+        # from Metrics import MyMetrics
         my_metrics = MyMultiClassTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
-        
-        #compile the model
+
+        # compile the model
         self.model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',
@@ -816,14 +835,7 @@ class n2c2RelexClassifier(Classifier):
         )
 
 
-
-
-
-
-
-        
-
-#Example of a custom loss function - it doesn't do anything correct, but its how you would write
+# Example of a custom loss function - it doesn't do anything correct, but its how you would write
 # a custom loss function if you wanted to
 def custom_loss_example(y_true, y_pred):
     # y_true = K.transpose(y_true)
@@ -833,6 +845,3 @@ def custom_loss_example(y_true, y_pred):
     # print(y_true[0][0].get_shape())
     # print(y_pred[0][0].get_shape())
     return K.binary_crossentropy(y_true[0][0], y_pred[0][0])
-
-
-

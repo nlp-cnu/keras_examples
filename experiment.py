@@ -171,12 +171,11 @@ def run_multiclass_text_classification_dataset():
     predicted_labels = np.identity(num_classes)[np.argmax(y_pred, axis=1)]
     print(sklearn.metrics.classification_report(val_y, predicted_labels,
                                                 target_names=['TrIP', 'TrWP', 'TrCP', 'TrAP', 'TrNAP', 'TeRP', 'TeCP', 'PIP']))
-          
-
 
 
 def output_gold_standard_brat_formats_for_ner():
-    language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
+    #language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
+    language_model_name = './models/biobert_pretrain_output_disch_100000'
 
     # max_lengths are set really high because we don't want to truncate any labels
     # if in our predictions we do truncate, we need to be penalized for that
