@@ -10,6 +10,7 @@ import sklearn.utils
 import csv
 import sys
 import regex
+import re
 
 import Classifier
 
@@ -466,7 +467,6 @@ class TokenClassificationDataset(Dataset):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
         self.num_classes = num_classes
         self.df = self.preprocess(data_file_path, tokenizer)
-
         self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
 
         # Convert from categorical encoding to binary encoding
@@ -482,7 +482,7 @@ class TokenClassificationDataset(Dataset):
                 # grab the class the token belongs to
                 true_class = self.df['annotation'][i][j]
                 # 0 indicates the None class, which we don't annotate, otherwise set the class to 1
-                if(true_class > 0):
+                if true_class > 0:
                     class_index = true_class - 1
                     self.labels[i][j][int(class_index)] = 1.0
 
@@ -495,12 +495,12 @@ class TokenClassificationDataset(Dataset):
         
         # Creates new label that accounts for the tokenization of a sample
         def tokenize_sample(sample, tokenizer):
-            # get a list containing the number of tokens per space seperated word (.split())
-            token_lengths = [len(tok) - 2 for tok in tokenizer(sample['text'].split())['input_ids']]
+            # get a list containing the number of tokens split by space and punctuation
+            naive_tokens = re.findall(r'\b\w+\b|[^\s\w]', sample['text'])
+            token_lengths = [len(tok) - 2 for tok in tokenizer(naive_tokens)['input_ids']]
 
             # Create the new labels, which maps the space separated labels to token labels
             new_labels = []
-
             #add a 0 label for the [CLS] token
             new_labels.append(0)
 
@@ -512,21 +512,11 @@ class TokenClassificationDataset(Dataset):
                 new_labels.extend(labels_for_this_word)
                 # The code above (^) does this (v), but it is way faster
                 #for j in range(token_lengths[i]):
-                #    new_labels.append(labels[i])
+                #    new_labels.append(labels[i])s
+
             # add a 0 label for the SEP token and return
             new_labels.append(0)
             return new_labels
-
-            # this was the previous code, but it had some bugs
-            #print("sample['text'] = ", sample['text'])
-            #labels = sample['annotation']
-            #new_labels = []
-            #for i in range(len(labels)):
-            #    label = labels[i]
-            #    new_label = [label] * token_lengths[i]
-            #    new_labels.extend(new_label)
-            #new_label = [0] + new_labels + [0]
-            #return new_label
 
         # assumes classes are encoded as a real number, so a single annotation per class
         df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False,
@@ -535,6 +525,7 @@ class TokenClassificationDataset(Dataset):
         #replace non-standard space characters with a space
         df['text'] = df['text'].apply(lambda x: regex.sub(r'\p{Zs}', ' ', x))
 
+        # NOTE: This could make performance worse, but [UNK] tokens are a big problems for converting between formatss
         # replace non-ascii characters with *
         #  if we just remove them then it can throw off the labels
         for i in range(len(df['text'].values)):
