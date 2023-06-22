@@ -507,9 +507,12 @@ class TokenClassificationDataset(Dataset):
             # extend each label to the number of tokens in that space separated "word"
             labels = sample['annotation']
             for i in range(len(labels)):
-                for j in range(token_lengths[i]):
-                    new_labels.append(labels[i])
-
+                # add the new labels
+                labels_for_this_word = [labels[i]] * token_lengths[i]
+                new_labels.extend(labels_for_this_word)
+                # The code above (^) does this (v), but it is way faster
+                #for j in range(token_lengths[i]):
+                #    new_labels.append(labels[i])
             # add a 0 label for the SEP token and return
             new_labels.append(0)
             return new_labels
