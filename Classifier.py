@@ -277,7 +277,7 @@ class BinaryTextClassifier(Classifier):
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
         # compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
@@ -326,7 +326,7 @@ class MultiLabelTextClassifier(Classifier):
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
         # create the optimizer
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
 
         # create the merics
         my_metrics = MyMultiLabelTextClassificationMetrics(self._num_classes)
@@ -384,7 +384,7 @@ class MultiClassTextClassifier(Classifier):
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
         # create the optimizer
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
 
         # set up the metrics
         my_metrics = MyMultiClassTextClassificationMetrics(self._num_classes)
@@ -433,7 +433,7 @@ class MultiClassTokenClassifier(Classifier):
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
         # create the optimizer, metrics, and compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
         my_metrics = MyMultiClassTokenClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
         self.model.compile(
@@ -800,7 +800,7 @@ class i2b2RelexClassifier(Classifier):
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
         # create the optimizer
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
 
         # create the merics
         my_metrics = MyMultiLabelTextClassificationMetrics(self._num_classes)
@@ -848,7 +848,7 @@ class n2c2RelexClassifier(Classifier):
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
 
         # create the optimizer
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
 
         # create the merics
         # from Metrics import MyMetrics
