@@ -644,105 +644,81 @@ class MultiClassTokenClassifier(Classifier):
                     f"T{entity_num}\t{annotation['class_name']} {annotation['span_start']} {annotation['span_end']}\t{annotation['span_text']}\n")
                 entity_num += 1
 
-    def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3):
+    def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3, remove_none_class=True):
         """
-        Evaluates the predictions against true values. Does not consider the None class
-        in the evaluation
+        Evaluates the predictions against true values. Predictions and Gold are from the classifier/dataset.
+        They are a 3-D matrix [line, token, one-hot-vector of class]
+
         :param pred_y: matrix of predicted values
         :param true_y: matrix of true values
         :param class_names: an ordered list of class names (strings)
         :param decimal_places: an integer specifying the number of decimal places to output
+        :param renmove_none_class: if True, removes the None class from evaluation
         """
 
-        # set up variables
-        p = pred_y
-        g = true_y
-        # These are used to collect the metrics. It is useful if you wanto
-        # to write them to file, but currently not used
-        pred_micro_precisions = []
-        pred_macro_precisions = []
-        pred_micro_recalls = []
-        pred_macro_recalls = []
-        pred_micro_f1s = []
-        pred_macro_f1s = []
+        # TODO - assumes predictions are one-hot
 
         # making y_pred and y_true have the same size by trimming
-        num_samples = p.shape[0]
-        max_num_tokens_in_batch = p.shape[1]
+        num_lines = pred_y.shape[0]
 
-        print("num_samples = ", num_samples)
-        print("p.shape = ", p.shape)
-        print("g.shape = ", g.shape)
-        print("pred_sum = ", np.sum(pred_y))
-        print("gold_sum = ", np.sum(true_y))
+        # flatten the predictions. So, it is one prediction per token
+        gold_flat = []
+        pred_flat = []
+        for i in range(num_lines):
+            # get the gold and predictions for this line
+            line_gold = true_y[i, :, :]
+            line_pred = pred_y[i, :, :]
 
-        # Transforms g to the same size as P
-        # removes the NONE class
-        g = g[:, :max_num_tokens_in_batch, :]
+            # convert token classifications to categorical
+            # determine if classification is None class
+            not_none = np.max(line_gold, axis=1) > 0
+            line_gold_categorical = np.argmax(line_gold, axis=1) + not_none
+            not_none = np.max(line_pred, axis=1) > 0
+            line_pred_categorical = np.argmax(line_pred, axis=1) + not_none
 
-        # trim the predictions up to the max length
-        gt_final = []
-        pred_final = []
-        for sample_pred, sample_gt, i in zip(p, g, range(num_samples)):
-            print("i = ", i)
-            # vv Find where the gt labels stop (preds will be junk after this) and trim the labels and predictions vv
-            trim_index = 0
-
-            print("trim_index = ", trim_index)
-            print("len(sample_gt) = ", len(sample_gt))
-            print("truth_val = ", str(all(v == 0 for v in sample_gt[trim_index])))
-            #print("sample_gt = ", sample_gt)
-            print("sum = ", np.sum(sample_gt))
+            if remove_none_class:
+                for gold, pred in zip(line_gold_categorical, line_pred_categorical):
+                    if gold > 0 or pred > 0:
+                        gold_flat.append(gold)
+                        pred_flat.append(pred)
+            else:
+                # add to the flattened list
+                gold_flat.extend(line_gold_categorical.tolist())
+                pred_flat.extend(line_pred_categorical.tolist())
 
 
-            while trim_index < len(sample_gt) and not all(v == 0 for v in sample_gt[trim_index]):
-                print ("bloop")
-                trim_index += 1
-                sample_gt = sample_gt[:trim_index, :]
-                for s in sample_gt:
-                    gt_final.append(s.tolist())
 
-                sample_pred = (sample_pred == sample_pred.max(axis=1)[:, None]).astype(int)
-                sample_pred = sample_pred[:trim_index, :]
-                for s in sample_pred:
-                    pred_final.append(s.tolist())
+            # Find where the gold labels stop (preds will be junk after this) and trim the labels and predictions vv
+            #num_tokens = line_gold.shape[0]
+            #for token_num in range(num_tokens):
+            #    # convert this token prediction to a categorical value
+            #    sample_gold = line_gold[token_num]
+            #    is_none = np.max(sample_gold) > 0
+            #    if is_none:
+            #        gold_flat.append(0)
+            #    else:
+            #        gold_flat.append(np.argmax(sample_gold) + 1)
 
-                    # ^^^^^
+            #    # convert this token prediction to a categorical value
+            #    sample_pred = line_pred[token_num]
+            #    is_none = np.max(line_pred) > 0
+            #    if is_none:
+            #        pred_flat.append(0)
+            #    else:
+            #        pred_flat.append(np.argmax(sample_pred) + 1)
+
         # Transforming the predictions and labels so that the NONE class is not counted
-        p = np.array(pred_final)
-        g = np.array(gt_final)
-
-        print("pred_final = ", pred_final)
-        print("gt_final = ", gt_final)
-
-        p = p.reshape((-1, self._num_classes))[:, 1:]
-        g = g.reshape((-1, self._num_classes))[:, 1:]
+        #p = np.array(pred_flat)
+        #g = np.array(gold_flat)
+        #p = p.reshape((-1, self._num_classes))[:, 1:]
+        #g = g.reshape((-1, self._num_classes))[:, 1:]
 
         # Calculating the metrics w/ sklearn
         # target_names = list(class_map)[1:]
-        print("class_names = ", class_names)
-        print("g = ", g)
-        print("p = ", p)
-        print("decimal_places = ", decimal_places)
-        report_metrics = sklearn.metrics.classification_report(g, p, target_names=class_names,
+        report_metrics = sklearn.metrics.classification_report(gold_flat, pred_flat, target_names=class_names,
                                                                digits=decimal_places)  # , output_dict=True)
+        print(report_metrics)
 
-        # collecting the reported metrics (useful if you want to output them, but not used now)
-        # micro_averaged_stats = report_metrics["micro avg"]
-        # micro_precision = micro_averaged_stats["precision"]
-        # pred_micro_precisions.append(micro_precision)
-        # micro_recall = micro_averaged_stats["recall"]
-        # pred_micro_recalls.append(micro_recall)
-        # micro_f1 = micro_averaged_stats["f1-score"]
-        # pred_micro_f1s.append(micro_f1)
-
-        # macro_averaged_stats = report_metrics["macro avg"]
-        # macro_precision = macro_averaged_stats["precision"]
-        # pred_macro_precisions.append(macro_precision)
-        # macro_recall = macro_averaged_stats["recall"]
-        # pred_macro_recalls.append(macro_recall)
-        # macro_f1 = macro_averaged_stats["f1-score"]
-        # pred_macro_f1s.append(macro_f1)
 
 
 class i2b2RelexClassifier(Classifier):

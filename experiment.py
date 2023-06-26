@@ -301,8 +301,8 @@ def run_multiclass_token_classification_dataset():
 
 
 def run_ade_miner():
-    training_data_filepath = '../training_methods_experiment/data/ademiner/converted.tsv'
-    test_data_file_path = '../training_methods_experiment/data/ademiner/converted.tsv'
+    training_data_filepath = '/home/sam/data/training_exp_data/ademiner/converted.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/ademiner/converted.tsv'
     language_model_name = Classifier.Classifier.PUBMED_BERT
     #language_model_name = Classifier.PUBMED_BERT
     num_classes = 1
@@ -323,7 +323,7 @@ def run_ade_miner():
     #                 early_stopping_patience=5,
     #                 early_stopping_monitor='val_micro_F1')
     #classifier.save_weights('temp_ade_miner_weights')
-    #classifier.load_weights('temp_ade_miner_weights')
+    classifier.load_weights('temp_ade_miner_weights')
 
     # load the test data and evaluate
     data = TokenClassificationDataset(test_data_file_path, num_classes, classifier.tokenizer,
@@ -333,9 +333,55 @@ def run_ade_miner():
     # evaluate performance on the validation set
     predictions = classifier.predict(test_x)
 
+    # output preditions to brat format
+    # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
+
+    # output performance
+    class_names = ['None', 'ade']
+    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=False)
     class_names = ['ade']
-    #classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
-    classifier.evaluate_predictions(test_y, test_y, class_names)
+    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=True)
+
+def run_i2b2_2010():
+    training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted.tsv'
+    language_model_name = Classifier.Classifier.PUBMED_BERT
+    num_classes = 3
+
+    # create classifier
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
+
+    # load the data and split into train/validation
+    #data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
+    #                                  validation_set_size=0.2, shuffle_data=True)
+    #train_x, train_y = data.get_train_data()
+    #val_x, val_y = data.get_validation_data()
+
+    # train the model
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 restore_best_weights=True,
+    #                 early_stopping_patience=5,
+    #                 early_stopping_monitor='val_micro_F1')
+    #classifier.save_weights('temp_i2b2_weights')
+    #classifier.load_weights('temp_i2b2_weights')
+
+    # load the test data and evaluate
+    data = TokenClassificationDataset(test_data_file_path, num_classes, classifier.tokenizer,
+                                      validation_set_size=0.0, shuffle_data=False)
+    test_x, test_y = data.get_train_data()
+
+    # evaluate performance on the validation set
+    predictions = classifier.predict(test_x)
+
+    # output predictions to brat format
+    # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
+
+    # output performance
+    class_names = ['None', 'problem', 'treatment', 'test']
+    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=False)
+    class_names = ['problem', 'treatment', 'test']
+    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=True)
 
 
 #This is the main running method for the script
@@ -349,3 +395,4 @@ if __name__ == '__main__':
 
     #output_gold_standard_brat_formats_for_ner()
     run_ade_miner()
+    #run_i2b2_2010()
