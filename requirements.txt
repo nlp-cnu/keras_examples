@@ -1,8 +1,0 @@
-tensorflow
-transformers
-tensorflow_addons
-numpy
-pandas
-pydot
-scikit-learn
-pytorch2keras

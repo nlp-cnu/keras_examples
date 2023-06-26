@@ -1,3 +1,4 @@
+import Classifier
 from Classifier import *
 from Dataset import *
 import sklearn
@@ -297,7 +298,45 @@ def run_multiclass_token_classification_dataset():
     predictions = classifier.predict(val_x)
     classifier.evaluate_predictions(predictions, val_y)
     # TODO - implement this function --- we don't want to count the none class and have to do some semi-complex stuff. 
-    
+
+
+def run_ade_miner():
+    training_data_filepath = '../training_methods_experiment/data/ademiner/converted.tsv'
+    test_data_file_path = '../training_methods_experiment/data/ademiner/converted.tsv'
+    language_model_name = Classifier.Classifier.PUBMED_BERT
+    #language_model_name = Classifier.PUBMED_BERT
+    num_classes = 1
+
+    # create classifier
+    classifier = MultiClassTokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
+
+    # load the data and split into train/validation
+    #data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
+    #                                  validation_set_size=0.2, shuffle_data=True)
+    #train_x, train_y = data.get_train_data()
+    #val_x, val_y = data.get_validation_data()
+
+    # train the model
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 restore_best_weights=True,
+    #                 early_stopping_patience=5,
+    #                 early_stopping_monitor='val_micro_F1')
+    #classifier.save_weights('temp_ade_miner_weights')
+    #classifier.load_weights('temp_ade_miner_weights')
+
+    # load the test data and evaluate
+    data = TokenClassificationDataset(test_data_file_path, num_classes, classifier.tokenizer,
+                                      validation_set_size=0.0, shuffle_data=False)
+    test_x, test_y = data.get_train_data()
+
+    # evaluate performance on the validation set
+    predictions = classifier.predict(test_x)
+
+    class_names = ['ade']
+    #classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
+    classifier.evaluate_predictions(test_y, test_y, class_names)
+
 
 #This is the main running method for the script
 if __name__ == '__main__':
@@ -307,4 +346,6 @@ if __name__ == '__main__':
     #run_multilabel_text_classification_dataset()
     #run_multiclass_text_classification_dataset()
     #run_multiclass_token_classification_dataset()
-    output_gold_standard_brat_formats_for_ner()
+
+    #output_gold_standard_brat_formats_for_ner()
+    run_ade_miner()

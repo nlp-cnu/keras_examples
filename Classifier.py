@@ -45,7 +45,8 @@ class Classifier(ABC):
 
     # social media models
     ROBERTA_TWITTER = 'cardiffnlp/twitter-roberta-base'
-    BIOREDDIT_BERT = 'cambridgeltl/BioRedditBERT-uncased'
+    BIOREDDIT_BERT = './models/BioRedditBERT-uncased' #'cambridgeltl/BioRedditBERT-uncased'
+    BERTWEET = './models/bertweet-base'
 
     # biomedical and clinical models
     # these all are written in pytorch so had to be converted
@@ -58,6 +59,7 @@ class Classifier(ABC):
     DISCHARGE_SUMMARY_BERT = './models/bert_pretrain_output_disch_100000'
     BIOCLINICAL_BERT = './models/biobert_pretrain_output_all_notes_150000'
     BIODISCHARGE_SUMMARY_BERT = './models/biobert_pretrain_output_disch_100000'
+    PUBMED_BERT = './models/BiomedNLP-PubMedBERT-base-uncased-abstract'
 
     # some default parameter values
     EPOCHS = 100
@@ -65,7 +67,7 @@ class Classifier(ABC):
     MAX_LENGTH = 512
     # Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
     #      For BERT its 512
-    LEARNING_RATE = 1e-5
+    LEARNING_RATE = 1e-5 # This seems to be a pretty good default learning rate
     DROPOUT_RATE = 0.8
     LANGUAGE_MODEL_TRAINABLE = True
     MODEL_OUT_FILE_NAME = ''
@@ -541,8 +543,9 @@ class MultiClassTokenClassifier(Classifier):
                 previous_text_length += 1
 
             # iterate over each token in the line
-            for token, labels in zip(tokens,
-                                     y_line):  # TODO - zipping these together will truncate the text (if its longer)
+            # matcher for finding white space (pre-compile it out of the loop)
+            matcher = re.compile('\s')  # —™…’“”®
+            for token, labels in zip(tokens, y_line):  # TODO - zipping these together will truncate the text (if its longer)
                 # find the length of this text (used to update the previous text length)
                 token_text = token.replace("##", "")  # remove word piece embedding characters
                 this_text_length = len(token_text)
@@ -552,7 +555,6 @@ class MultiClassTokenClassifier(Classifier):
                 # match any white space or weird characters (like UTF+FF3F)
                 # Note: if you want to keep emojis and stuff you will probably need to update this
                 # matcher = re.compile('[^\w!@#$%^&*\(\)-_=+`~\[\]{}\\\|:;\"\'<>,.\?\/]+')
-                matcher = re.compile('\s')  # —™…’“”®
                 while matcher.match(document_text[previous_text_length]):
                     previous_text_length += 1
 
@@ -638,7 +640,8 @@ class MultiClassTokenClassifier(Classifier):
             entity_num = 1
             for annotation in annotations:
                 f.write(
-                    f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}\n")
+                    #f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}\n")
+                    f"T{entity_num}\t{annotation['class_name']} {annotation['span_start']} {annotation['span_end']}\t{annotation['span_text']}\n")
                 entity_num += 1
 
     def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3):
@@ -666,6 +669,13 @@ class MultiClassTokenClassifier(Classifier):
         # making y_pred and y_true have the same size by trimming
         num_samples = p.shape[0]
         max_num_tokens_in_batch = p.shape[1]
+
+        print("num_samples = ", num_samples)
+        print("p.shape = ", p.shape)
+        print("g.shape = ", g.shape)
+        print("pred_sum = ", np.sum(pred_y))
+        print("gold_sum = ", np.sum(true_y))
+
         # Transforms g to the same size as P
         # removes the NONE class
         g = g[:, :max_num_tokens_in_batch, :]
@@ -674,9 +684,19 @@ class MultiClassTokenClassifier(Classifier):
         gt_final = []
         pred_final = []
         for sample_pred, sample_gt, i in zip(p, g, range(num_samples)):
+            print("i = ", i)
             # vv Find where the gt labels stop (preds will be junk after this) and trim the labels and predictions vv
             trim_index = 0
+
+            print("trim_index = ", trim_index)
+            print("len(sample_gt) = ", len(sample_gt))
+            print("truth_val = ", str(all(v == 0 for v in sample_gt[trim_index])))
+            #print("sample_gt = ", sample_gt)
+            print("sum = ", np.sum(sample_gt))
+
+
             while trim_index < len(sample_gt) and not all(v == 0 for v in sample_gt[trim_index]):
+                print ("bloop")
                 trim_index += 1
                 sample_gt = sample_gt[:trim_index, :]
                 for s in sample_gt:
@@ -691,11 +711,19 @@ class MultiClassTokenClassifier(Classifier):
         # Transforming the predictions and labels so that the NONE class is not counted
         p = np.array(pred_final)
         g = np.array(gt_final)
+
+        print("pred_final = ", pred_final)
+        print("gt_final = ", gt_final)
+
         p = p.reshape((-1, self._num_classes))[:, 1:]
         g = g.reshape((-1, self._num_classes))[:, 1:]
 
         # Calculating the metrics w/ sklearn
         # target_names = list(class_map)[1:]
+        print("class_names = ", class_names)
+        print("g = ", g)
+        print("p = ", p)
+        print("decimal_places = ", decimal_places)
         report_metrics = sklearn.metrics.classification_report(g, p, target_names=class_names,
                                                                digits=decimal_places)  # , output_dict=True)
 
