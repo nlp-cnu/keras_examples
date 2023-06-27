@@ -401,13 +401,13 @@ class MultiClassTextClassifier(Classifier):
 # Multilabel token classification is also possible, but unlikely, so I deleted it. If
 # it gets implemented in the future, don't forget to do the correct squashing function
 # for the final layer (softmax) and correct loss (CCE)
-class MultiClassTokenClassifier(Classifier):
+class TokenClassifier(Classifier):
 
     def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
                  max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
-                 dropout_rate=Classifier.DROPOUT_RATE):
+                 dropout_rate=Classifier.DROPOUT_RATE, multi_class=True):
         '''
-        This Classifier is for multiclass token classification tasks
+        This Classifier is for token classification tasks, if it is a multi-label or binary task, set multi_class=false
         '''
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
                             max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
@@ -425,9 +425,16 @@ class MultiClassTokenClassifier(Classifier):
         # create the embeddings - the 0th index is the last hidden layer
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
 
-        # softmax
-        softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
-        final_output = softmax_layer(embeddings)
+        # create the output layer
+        if multi_class:
+            activation = 'softmax'
+            loss_function = 'categorical_crossentropy'
+        else: #multi-label or binary
+            activation = 'sigmoid'
+            loss_function = 'binary_crossentropy'
+
+        output_layer = tf.keras.layers.Dense(self._num_classes, activation=activation)
+        final_output = output_layer(embeddings)
 
         # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
@@ -438,7 +445,7 @@ class MultiClassTokenClassifier(Classifier):
         metrics = my_metrics.get_all_metrics()
         self.model.compile(
             optimizer=optimizer,
-            loss='categorical_crossentropy',
+            loss=loss_function,
             metrics=metrics
         )
 
@@ -643,7 +650,7 @@ class MultiClassTokenClassifier(Classifier):
                     f"T{entity_num}\t{annotation['class_name']} {annotation['span_start']} {annotation['span_end']}\t{annotation['span_text']}\n")
                 entity_num += 1
 
-    def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3):
+    def evaluate_predictions(self, pred_y, true_y, class_names=None, report_none=False):
         """
         Evaluates the predictions against true values. Predictions and Gold are from the classifier/dataset.
         They are a 3-D matrix [line, token, one-hot-vector of class]
@@ -651,8 +658,8 @@ class MultiClassTokenClassifier(Classifier):
         :param pred_y: matrix of predicted values
         :param true_y: matrix of true values
         :param class_names: an ordered list of class names (strings)
-        :param decimal_places: an integer specifying the number of decimal places to output
-        :param remove_none_class: if True, removes the None class from evaluation
+        :param report_none: if True, then results for the none class will be reported and averaged into micro
+                  and macro scores. A None class is automatically added to the class_names
         """
 
         # making y_pred and y_true have the same size by trimming
@@ -661,10 +668,17 @@ class MultiClassTokenClassifier(Classifier):
         # flatten the predictions. So, it is one prediction per token
         gold_flat = []
         pred_flat = []
+
+        print("pred_y = ", pred_y)
+        exit()
+
         for i in range(num_lines):
             # get the gold and predictions for this line
             line_gold = true_y[i, :, :]
             line_pred = pred_y[i, :, :]
+
+            print("line_pred = ", line_pred)
+            print("line_gold = ", line_gold)
 
             # convert token classifications to categorical. Argmax returns 0 if everything is 0,
             # so, determine if classification is None class. If it's not, add 1 to the argmax
@@ -694,17 +708,31 @@ class MultiClassTokenClassifier(Classifier):
             pred_index = pred_flat[i]
             correct = pred_flat[i] == gold_flat[i]
 
+            #print (f"{true_index}, {pred_index}")
+
             if correct:
                 tp[true_index] += 1
             else:
                 fp[pred_index] += 1
                 fn[true_index] += 1
+        print("tp = ", tp)
+        print("fp = ", fp)
+        print("fn = ", fn)
+
+        # convert tp, fp, fn into arrays and trim if not reporting none
+        if report_none:
+            class_names = ['None'] + class_names
+            num_classes += 1
+            tp = np.array(tp)
+            fp = np.array(fp)
+            fn = np.array(fn)
+        else:
+            # take [1:] to remove the None Class
+            tp = np.array(tp)[1:]
+            fp = np.array(fp)[1:]
+            fn = np.array(fn)[1:]
 
         # calculate precision, recall, and f1 for each class
-        # take [1:] to remove the None Class
-        tp = np.array(tp)[1:]
-        fp = np.array(fp)[1:]
-        fn = np.array(fn)[1:]
         precision = tp / (tp + fp)
         recall = tp / (tp + fn)
         f1_score = (2 * precision * recall) / (precision + recall)
