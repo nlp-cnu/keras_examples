@@ -311,18 +311,19 @@ def run_ade_miner():
     classifier = MultiClassTokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    #data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
-    #                                  validation_set_size=0.2, shuffle_data=True)
-    #train_x, train_y = data.get_train_data()
-    #val_x, val_y = data.get_validation_data()
+    data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
+                                      validation_set_size=0.2, shuffle_data=True)
+    train_x, train_y = data.get_train_data()
+    val_x, val_y = data.get_validation_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_F1')
-    #classifier.save_weights('temp_ade_miner_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_F1',
+                     epochs=10)
+    classifier.save_weights('temp_ade_miner_weights')
     #classifier.load_weights('temp_ade_miner_weights')
 
     # load the test data and evaluate
@@ -332,15 +333,18 @@ def run_ade_miner():
 
     # evaluate performance on the validation set
     predictions = classifier.predict(test_x)
+    import pickle
+    with open('temp_pred_file_ade.pkl', 'wb') as file:
+        pickle.dump(predictions, file)
+    #with open('temp_pred_file_ade.pkl', 'rb') as file:
+    #    predictions = pickle.load(file)
 
     # output preditions to brat format
     # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
 
     # output performance
-    class_names = ['None', 'ade']
-    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=False)
-    class_names = ['temp', 'ade']
-    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=True)
+    class_names = ['ade']
+    classifier.evaluate_predictions(test_y, test_y, class_names)
 
 def run_i2b2_2010():
     training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted.tsv'
@@ -352,18 +356,18 @@ def run_i2b2_2010():
     classifier = MultiClassTokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
-                                      validation_set_size=0.2, shuffle_data=True)
-    train_x, train_y = data.get_train_data()
-    val_x, val_y = data.get_validation_data()
+    #data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
+    #                                  validation_set_size=0.2, shuffle_data=True)
+    #train_x, train_y = data.get_train_data()
+    #val_x, val_y = data.get_validation_data()
 
     # train the model
-    classifier.train(train_x, train_y,
-                     validation_data=(val_x, val_y),
-                     restore_best_weights=True,
-                     early_stopping_patience=5,
-                     early_stopping_monitor='val_micro_F1')
-    classifier.save_weights('temp_i2b2_weights')
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 restore_best_weights=True,
+    #                 early_stopping_patience=5,
+    #                 early_stopping_monitor='val_micro_F1')
+    #classifier.save_weights('temp_i2b2_weights')
     #classifier.load_weights('temp_i2b2_weights')
 
     # load the test data and evaluate
@@ -372,16 +376,20 @@ def run_i2b2_2010():
     test_x, test_y = data.get_train_data()
 
     # evaluate performance on the validation set
-    predictions = classifier.predict(test_x)
+    #predictions = classifier.predict(test_x)
+
+    import pickle
+    #with open('temp_pred_file.pkl', 'wb') as file:
+    #    pickle.dump(predictions, file)
+    with open('temp_pred_file.pkl', 'rb') as file:
+        predictions = pickle.load(file)
 
     # output predictions to brat format
     # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
 
     # output performance
-    class_names = ['None', 'problem', 'treatment', 'test']
-    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=False)
     class_names = ['problem', 'treatment', 'test']
-    classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=True)
+    classifier.evaluate_predictions(predictions, test_y, class_names)
 
 
 #This is the main running method for the script
@@ -394,5 +402,5 @@ if __name__ == '__main__':
     #run_multiclass_token_classification_dataset()
 
     #output_gold_standard_brat_formats_for_ner()
-    #run_ade_miner()
-    run_i2b2_2010()
+    run_ade_miner()
+    #run_i2b2_2010()

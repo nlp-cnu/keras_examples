@@ -643,7 +643,7 @@ class MultiClassTokenClassifier(Classifier):
                     f"T{entity_num}\t{annotation['class_name']} {annotation['span_start']} {annotation['span_end']}\t{annotation['span_text']}\n")
                 entity_num += 1
 
-    def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3, remove_none_class=True):
+    def evaluate_predictions(self, pred_y, true_y, class_names=None, decimal_places=3):
         """
         Evaluates the predictions against true values. Predictions and Gold are from the classifier/dataset.
         They are a 3-D matrix [line, token, one-hot-vector of class]
@@ -652,10 +652,8 @@ class MultiClassTokenClassifier(Classifier):
         :param true_y: matrix of true values
         :param class_names: an ordered list of class names (strings)
         :param decimal_places: an integer specifying the number of decimal places to output
-        :param renmove_none_class: if True, removes the None class from evaluation
+        :param remove_none_class: if True, removes the None class from evaluation
         """
-
-        # TODO - assumes predictions are one-hot
 
         # making y_pred and y_true have the same size by trimming
         num_lines = pred_y.shape[0]
@@ -668,36 +666,68 @@ class MultiClassTokenClassifier(Classifier):
             line_gold = true_y[i, :, :]
             line_pred = pred_y[i, :, :]
 
-            # trim the gold from 512 to the max tokens actually observed (from predictions)
-            max_tokens = line_pred.shape[0]
-            line_gold = line_gold[:max_tokens, :]
-
-            # convert token classifications to categorical
-            # determine if classification is None class
+            # convert token classifications to categorical. Argmax returns 0 if everything is 0,
+            # so, determine if classification is None class. If it's not, add 1 to the argmax
             not_none = np.max(line_gold, axis=1) > 0
             line_gold_categorical = np.argmax(line_gold, axis=1) + not_none
             not_none = np.max(line_pred, axis=1) > 0
             line_pred_categorical = np.argmax(line_pred, axis=1) + not_none
 
-            # add these tokens to the flattened list
-            if remove_none_class:
-                for gold, pred in zip(line_gold_categorical, line_pred_categorical):
-                    if gold > 0 or pred > 0:
-                        gold_flat.append(gold)
-                        pred_flat.append(pred)
+            # add to the flattened list of labeles
+            gold_flat.extend(line_gold_categorical.tolist())
+            pred_flat.extend(line_pred_categorical.tolist())
+
+        # initialize the dictionaries
+        num_classes = len(class_names)
+        tp = []
+        fp = []
+        fn = []
+        for i in range(num_classes + 1): # add one to account for the None class
+            tp.append(0)
+            fp.append(0)
+            fn.append(0)
+
+        # count the tps, fps, fns
+        num_samples = len(pred_flat)
+        for i in range(num_samples):
+            true_index = gold_flat[i]
+            pred_index = pred_flat[i]
+            correct = pred_flat[i] == gold_flat[i]
+
+            if correct:
+                tp[true_index] += 1
             else:
-                # add to the flattened list
-                gold_flat.extend(line_gold_categorical.tolist())
-                pred_flat.extend(line_pred_categorical.tolist())
+                fp[pred_index] += 1
+                fn[true_index] += 1
 
+        # calculate precision, recall, and f1 for each class
+        # take [1:] to remove the None Class
+        tp = np.array(tp)[1:]
+        fp = np.array(fp)[1:]
+        fn = np.array(fn)[1:]
+        precision = tp / (tp + fp)
+        recall = tp / (tp + fn)
+        f1_score = (2 * precision * recall) / (precision + recall)
+        support = tp + fn
 
-        # Calculating the metrics w/ sklearn
-        print(max(pred_flat))
-        print(max(gold_flat))
-        report_metrics = sklearn.metrics.classification_report(gold_flat, pred_flat, target_names=class_names,
-                                                               digits=decimal_places)  # , output_dict=True)
-        print(report_metrics)
+        # calculate micro and macro averages
+        macro_precision = np.mean(precision)
+        macro_recall = np.mean(recall)
+        macro_f1 = np.mean(f1_score)
+        all_tp = np.sum(tp)
+        all_fp = np.sum(fp)
+        all_fn = np.sum(fn)
+        micro_precision = all_tp / (all_tp + all_fp)
+        micro_recall = all_tp / (all_tp + all_fn)
+        micro_f1 = (2 * micro_precision * micro_recall) / (micro_precision + micro_recall)
 
+        # output the results in a nice format
+        print("{:<12s} {:<12s} {:<10s} {:}    {:}".format("", "precision", "recall", "f1-score", "support"))
+        for i in range(num_classes):
+            print(f"{class_names[i]:<10s} {precision[i]:10.3f} {recall[i]:10.3f} {f1_score[i]:10.3f} {support[i]:10}")
+        print()
+        print(f"micro avg {micro_precision:10.3f} {micro_recall:10.3f} {micro_f1:10.3f}")
+        print(f"macro avg {macro_precision:10.3f} {macro_recall:10.3f} {macro_f1:10.3f}")
 
 
 class i2b2RelexClassifier(Classifier):
