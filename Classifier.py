@@ -640,7 +640,6 @@ class MultiClassTokenClassifier(Classifier):
             entity_num = 1
             for annotation in annotations:
                 f.write(
-                    #f"T{entity_num}\t{annotation['class_name']}\t{annotation['span_start']}\t{annotation['span_end']}\t{annotation['span_text']}\t{annotation['token_text']}\n")
                     f"T{entity_num}\t{annotation['class_name']} {annotation['span_start']} {annotation['span_end']}\t{annotation['span_text']}\n")
                 entity_num += 1
 
@@ -669,6 +668,10 @@ class MultiClassTokenClassifier(Classifier):
             line_gold = true_y[i, :, :]
             line_pred = pred_y[i, :, :]
 
+            # trim the gold from 512 to the max tokens actually observed (from predictions)
+            max_tokens = line_pred.shape[0]
+            line_gold = line_gold[:max_tokens, :]
+
             # convert token classifications to categorical
             # determine if classification is None class
             not_none = np.max(line_gold, axis=1) > 0
@@ -676,6 +679,7 @@ class MultiClassTokenClassifier(Classifier):
             not_none = np.max(line_pred, axis=1) > 0
             line_pred_categorical = np.argmax(line_pred, axis=1) + not_none
 
+            # add these tokens to the flattened list
             if remove_none_class:
                 for gold, pred in zip(line_gold_categorical, line_pred_categorical):
                     if gold > 0 or pred > 0:
@@ -687,34 +691,9 @@ class MultiClassTokenClassifier(Classifier):
                 pred_flat.extend(line_pred_categorical.tolist())
 
 
-
-            # Find where the gold labels stop (preds will be junk after this) and trim the labels and predictions vv
-            #num_tokens = line_gold.shape[0]
-            #for token_num in range(num_tokens):
-            #    # convert this token prediction to a categorical value
-            #    sample_gold = line_gold[token_num]
-            #    is_none = np.max(sample_gold) > 0
-            #    if is_none:
-            #        gold_flat.append(0)
-            #    else:
-            #        gold_flat.append(np.argmax(sample_gold) + 1)
-
-            #    # convert this token prediction to a categorical value
-            #    sample_pred = line_pred[token_num]
-            #    is_none = np.max(line_pred) > 0
-            #    if is_none:
-            #        pred_flat.append(0)
-            #    else:
-            #        pred_flat.append(np.argmax(sample_pred) + 1)
-
-        # Transforming the predictions and labels so that the NONE class is not counted
-        #p = np.array(pred_flat)
-        #g = np.array(gold_flat)
-        #p = p.reshape((-1, self._num_classes))[:, 1:]
-        #g = g.reshape((-1, self._num_classes))[:, 1:]
-
         # Calculating the metrics w/ sklearn
-        # target_names = list(class_map)[1:]
+        print(max(pred_flat))
+        print(max(gold_flat))
         report_metrics = sklearn.metrics.classification_report(gold_flat, pred_flat, target_names=class_names,
                                                                digits=decimal_places)  # , output_dict=True)
         print(report_metrics)

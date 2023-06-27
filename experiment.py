@@ -323,7 +323,7 @@ def run_ade_miner():
     #                 early_stopping_patience=5,
     #                 early_stopping_monitor='val_micro_F1')
     #classifier.save_weights('temp_ade_miner_weights')
-    classifier.load_weights('temp_ade_miner_weights')
+    #classifier.load_weights('temp_ade_miner_weights')
 
     # load the test data and evaluate
     data = TokenClassificationDataset(test_data_file_path, num_classes, classifier.tokenizer,
@@ -339,7 +339,7 @@ def run_ade_miner():
     # output performance
     class_names = ['None', 'ade']
     classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=False)
-    class_names = ['ade']
+    class_names = ['temp', 'ade']
     classifier.evaluate_predictions(predictions, test_y, class_names, remove_none_class=True)
 
 def run_i2b2_2010():
@@ -352,18 +352,18 @@ def run_i2b2_2010():
     classifier = MultiClassTokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    #data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
-    #                                  validation_set_size=0.2, shuffle_data=True)
-    #train_x, train_y = data.get_train_data()
-    #val_x, val_y = data.get_validation_data()
+    data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
+                                      validation_set_size=0.2, shuffle_data=True)
+    train_x, train_y = data.get_train_data()
+    val_x, val_y = data.get_validation_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_F1')
-    #classifier.save_weights('temp_i2b2_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_F1')
+    classifier.save_weights('temp_i2b2_weights')
     #classifier.load_weights('temp_i2b2_weights')
 
     # load the test data and evaluate
@@ -394,5 +394,5 @@ if __name__ == '__main__':
     #run_multiclass_token_classification_dataset()
 
     #output_gold_standard_brat_formats_for_ner()
-    run_ade_miner()
-    #run_i2b2_2010()
+    #run_ade_miner()
+    run_i2b2_2010()
