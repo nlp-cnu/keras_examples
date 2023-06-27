@@ -650,7 +650,7 @@ class TokenClassifier(Classifier):
                     f"T{entity_num}\t{annotation['class_name']} {annotation['span_start']} {annotation['span_end']}\t{annotation['span_text']}\n")
                 entity_num += 1
 
-    def evaluate_predictions(self, pred_y, true_y, class_names=None, report_none=False):
+    def evaluate_predictions(self, pred_y, true_y, class_names, multi_class=True, report_none=False):
         """
         Evaluates the predictions against true values. Predictions and Gold are from the classifier/dataset.
         They are a 3-D matrix [line, token, one-hot-vector of class]
@@ -660,8 +660,8 @@ class TokenClassifier(Classifier):
         :param class_names: an ordered list of class names (strings)
         :param report_none: if True, then results for the none class will be reported and averaged into micro
                   and macro scores. A None class is automatically added to the class_names
+        :param multi_class: indicates if the labels are multi-class or multi-label
         """
-
         # making y_pred and y_true have the same size by trimming
         num_lines = pred_y.shape[0]
 
@@ -669,23 +669,23 @@ class TokenClassifier(Classifier):
         gold_flat = []
         pred_flat = []
 
-        print("pred_y = ", pred_y)
-        exit()
-
         for i in range(num_lines):
             # get the gold and predictions for this line
             line_gold = true_y[i, :, :]
             line_pred = pred_y[i, :, :]
 
-            print("line_pred = ", line_pred)
-            print("line_gold = ", line_gold)
+            # convert token classifications to categorical.
+            if multi_class:
+                line_gold_categorical = np.argmax(line_gold, axis=1)
+                line_pred_categorical = np.argmax(line_pred, axis=1)
 
-            # convert token classifications to categorical. Argmax returns 0 if everything is 0,
-            # so, determine if classification is None class. If it's not, add 1 to the argmax
-            not_none = np.max(line_gold, axis=1) > 0
-            line_gold_categorical = np.argmax(line_gold, axis=1) + not_none
-            not_none = np.max(line_pred, axis=1) > 0
-            line_pred_categorical = np.argmax(line_pred, axis=1) + not_none
+            else: # multilabel or binary
+                # Argmax returns 0 if everything is 0,
+                # so, determine if classification is None class. If it's not, add 1 to the argmax
+                not_none = np.max(line_gold, axis=1) > 0
+                line_gold_categorical = np.argmax(line_gold, axis=1) + not_none
+                not_none = np.max(line_pred, axis=1) > 0
+                line_pred_categorical = np.argmax(line_pred, axis=1) + not_none
 
             # add to the flattened list of labeles
             gold_flat.extend(line_gold_categorical.tolist())
@@ -696,7 +696,7 @@ class TokenClassifier(Classifier):
         tp = []
         fp = []
         fn = []
-        for i in range(num_classes + 1): # add one to account for the None class
+        for i in range(num_classes):
             tp.append(0)
             fp.append(0)
             fn.append(0)
@@ -708,21 +708,14 @@ class TokenClassifier(Classifier):
             pred_index = pred_flat[i]
             correct = pred_flat[i] == gold_flat[i]
 
-            #print (f"{true_index}, {pred_index}")
-
             if correct:
                 tp[true_index] += 1
             else:
                 fp[pred_index] += 1
                 fn[true_index] += 1
-        print("tp = ", tp)
-        print("fp = ", fp)
-        print("fn = ", fn)
 
         # convert tp, fp, fn into arrays and trim if not reporting none
         if report_none:
-            class_names = ['None'] + class_names
-            num_classes += 1
             tp = np.array(tp)
             fp = np.array(fp)
             fn = np.array(fn)
@@ -731,6 +724,9 @@ class TokenClassifier(Classifier):
             tp = np.array(tp)[1:]
             fp = np.array(fp)[1:]
             fn = np.array(fn)[1:]
+
+            if multi_class:
+                class_names = class_names[1:]
 
         # calculate precision, recall, and f1 for each class
         precision = tp / (tp + fp)
@@ -751,7 +747,7 @@ class TokenClassifier(Classifier):
 
         # output the results in a nice format
         print("{:<12s} {:<12s} {:<10s} {:}    {:}".format("", "precision", "recall", "f1-score", "support"))
-        for i in range(num_classes):
+        for i in range(len(class_names)):
             print(f"{class_names[i]:<10s} {precision[i]:10.3f} {recall[i]:10.3f} {f1_score[i]:10.3f} {support[i]:10}")
         print()
         print(f"micro avg {micro_precision:10.3f} {micro_recall:10.3f} {micro_f1:10.3f}")

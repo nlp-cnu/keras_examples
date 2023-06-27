@@ -473,6 +473,8 @@ class TokenClassificationDataset(Dataset):
         self.df = self.preprocess(data_file_path, tokenizer)
         self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
 
+        #TODO - add a class labels field, and add a warning if multi-label and no None.lower() Class
+
         # Convert from categorical encoding to binary encoding
         # Need to make a big array that is i x j x num_classes, where i is the ith token, j is the number of tokens
         num_lost = 0

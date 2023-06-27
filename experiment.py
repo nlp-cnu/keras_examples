@@ -308,11 +308,11 @@ def run_ade_miner():
     num_classes = 1
 
     # create classifier
-    classifier = MultiClassTokenClassifier(language_model_name, num_classes, learning_rate=1e-5, multi_class=False)
+    classifier = TokenClassifier(language_model_name, num_classes, learning_rate=1e-5, multi_class=False)
 
     # load the data and split into train/validation
     data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
-                                      validation_set_size=0.2, shuffle_data=True)
+                                      validation_set_size=0.2, shuffle_data=True, multi_class=False)
     train_x, train_y = data.get_train_data()
     val_x, val_y = data.get_validation_data()
 
@@ -322,7 +322,7 @@ def run_ade_miner():
                      restore_best_weights=True,
                      early_stopping_patience=5,
                      early_stopping_monitor='val_micro_F1',
-                     epochs=10)
+                     epochs=1)
     classifier.save_weights('temp_ade_miner_weights')
     #classifier.load_weights('temp_ade_miner_weights')
 
@@ -349,11 +349,11 @@ def run_i2b2_2010():
     training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted.tsv'
     test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted.tsv'
     language_model_name = Classifier.Classifier.BLUE_BERT_PUBMED_MIMIC
-    class_names = ['problem', 'treatment', 'test']
-    num_classes = len(class_names) + 1 # +1 for the None Class
+    class_names = ['none', 'problem', 'treatment', 'test']
+    num_classes = len(class_names)
 
     # create classifier
-    classifier = MultiClassTokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
+    classifier = TokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
 
     # load the data and split into train/validation
     data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
@@ -362,12 +362,12 @@ def run_i2b2_2010():
     val_x, val_y = data.get_validation_data()
 
     # train the model
-    classifier.train(train_x, train_y,
-                     validation_data=(val_x, val_y),
-                     restore_best_weights=True,
-                     early_stopping_patience=5,
-                     early_stopping_monitor='val_micro_F1')
-    classifier.save_weights('temp_i2b2_weights')
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 restore_best_weights=True,
+    #                 early_stopping_patience=5,
+    #                 early_stopping_monitor='val_micro_F1')
+    #classifier.save_weights('temp_i2b2_weights')
     #classifier.load_weights('temp_i2b2_weights')
 
     # load the test data and evaluate
@@ -376,13 +376,13 @@ def run_i2b2_2010():
     test_x, test_y = data.get_train_data()
 
     # evaluate performance on the validation set
-    predictions = classifier.predict(test_x)
+    #predictions = classifier.predict(test_x)
 
     import pickle
-    with open('temp_pred_file.pkl', 'wb') as file:
-        pickle.dump(predictions, file)
-    #with open('temp_pred_file.pkl', 'rb') as file:
-    #    predictions = pickle.load(file)
+    #with open('temp_pred_file.pkl', 'wb') as file:
+    #    pickle.dump(predictions, file)
+    with open('temp_pred_file.pkl', 'rb') as file:
+        predictions = pickle.load(file)
 
     # output predictions to brat format
     # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
@@ -401,5 +401,5 @@ if __name__ == '__main__':
     #run_multiclass_token_classification_dataset()
 
     #output_gold_standard_brat_formats_for_ner()
-    #run_ade_miner()
-    run_i2b2_2010()
+    run_ade_miner()
+    #run_i2b2_2010()
