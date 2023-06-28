@@ -345,8 +345,8 @@ def run_ade_miner():
     classifier.evaluate_predictions(predictions, test_y, class_names, report_none=True)
 
 def run_i2b2_2010():
-    training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted_all.tsv'
-    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_all.tsv'
+    training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted_train.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_test.tsv'
     language_model_name = Classifier.Classifier.BLUE_BERT_PUBMED_MIMIC
     class_names = ['none', 'problem', 'treatment', 'test']
     num_classes = len(class_names)
