@@ -662,17 +662,29 @@ class TokenClassifier(Classifier):
                   and macro scores. A None class is automatically added to the class_names
         :param multi_class: indicates if the labels are multi-class or multi-label
         """
-        # making y_pred and y_true have the same size by trimming
+        # grab dimensions
         num_lines = pred_y.shape[0]
+        padded_token_length = pred_y.shape[1]
+        num_classes = pred_y.shape[2]
+
+        # ensure the class_names length matches the number of predicted classes
+        if num_classes != len(class_names):
+            print("ERROR in evaluate_predictions: number of predicted classes not equal to the number of "
+                  + "provided class names. Did you forget about a None class?")
+            return
 
         # flatten the predictions. So, it is one prediction per token
         gold_flat = []
         pred_flat = []
-
         for i in range(num_lines):
             # get the gold and predictions for this line
-            line_gold = true_y[i, :, :]
+            line_gold = true_y[i][:, :]
             line_pred = pred_y[i, :, :]
+
+            # the gold contains the number of tokens (predictions are padded)
+            # remove padded predictions
+            num_tokens = line_gold.shape[0]
+            line_pred = pred_y[i, :num_tokens, :]
 
             # convert token classifications to categorical.
             if multi_class:
@@ -687,7 +699,7 @@ class TokenClassifier(Classifier):
                 not_none = np.max(line_pred, axis=1) > 0
                 line_pred_categorical = np.argmax(line_pred, axis=1) + not_none
 
-            # add to the flattened list of labeles
+            # add to the flattened list of labels
             gold_flat.extend(line_gold_categorical.tolist())
             pred_flat.extend(line_pred_categorical.tolist())
 

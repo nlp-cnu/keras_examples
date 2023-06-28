@@ -42,7 +42,8 @@ class Dataset(ABC):
         np.random.shuffle(idxs)
         # shuffle the data
         self._train_X = [self._train_X[idx] for idx in idxs]
-        self._train_Y = self._train_Y[idxs]
+        #self._train_Y = self._train_Y[idxs]
+        self._train_Y = [self._train_Y[idx] for idx in idxs]
 
         # Note: we shuffle like above rather than some other method because
         # X must be a list of text and Y should by a Numpy Array
@@ -80,13 +81,13 @@ class Dataset(ABC):
         # ensure the training data is a list of text (required for tokenizer)
         if type(self._train_X) is type(np.array):
             self._train_X = self._train_X.tolist()
-        # ensure the labels are a numpy array
-        self._train_Y = np.array(self._train_Y)
+        # ensure the labels are a numpy array --- it doesn't have to be. It acn be in the data handler instead, and there I can adjust the size per batch rather than with the dataset overall
+        #self._train_Y = np.array(self._train_Y)
         # do the same for validation data if it exists
         if self._val_X is not None:
             if type(self._val_X) is type(np.array):
                 self._val_X = self._val_X.tolist()
-            self._val_Y = np.array(self._val_Y)
+            #self._val_Y = np.array(self._val_Y)
                     
     def get_train_data(self):
         if self._train_X is None or self._train_Y is None:
@@ -469,34 +470,52 @@ class TokenClassificationDataset(Dataset):
     def __init__(self, data_file_path, num_classes, tokenizer, seed=SEED, validation_set_size=0, max_num_tokens=512,
                  shuffle_data=True, multi_class=True):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
+        # TODO - add a class labels field, and add a warning if multi-label and no None.lower() Class
         self.num_classes = num_classes
-        self.df = self.preprocess(data_file_path, tokenizer)
-        self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
 
-        #TODO - add a class labels field, and add a warning if multi-label and no None.lower() Class
+        # load and preprocess the data
+        df = self.preprocess(data_file_path, tokenizer)
+        self.data = df["text"].tolist()
+
+        # create the labels datastructure from the loaded labels in the data frame
+        #self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
+        self.labels = []
 
         # Convert from categorical encoding to binary encoding
         # Need to make a big array that is i x j x num_classes, where i is the ith token, j is the number of tokens
         num_lost = 0
-        num_samples = len(self.df['annotation'])
-        for i in range(num_samples):
-            num_tokens = len(self.df['annotation'][i])
+        num_samples = len(df['annotation'])
+        for sample_num in range(num_samples):
+            num_tokens = len(df['annotation'][sample_num])
+
+            # check if the annotations are getting truncated
             if num_tokens > max_num_tokens:
                 num_lost += num_tokens - max_num_tokens
-            for j in range(num_tokens)[:max_num_tokens]:
-                # grab the class the token belongs to
-                true_class = self.df['annotation'][i][j]
 
+            # create a matrix of annotations for this line. That is, vector per token in the line
+            #  up to the max_num_tokens  # TODO - do I need to truncate here? Isn't that handled by the data_Generator later?
+            #for j in range(num_tokens)[:max_num_tokens]:
+            sample_annotations = np.zeros([num_tokens, num_classes])
+            for token_num in range(num_tokens):
+                # grab the class the token belongs to
+                true_class = int(df['annotation'][sample_num][token_num])
+
+                # create the vector for this annotation
                 if multi_class:
-                    self.labels[i][j][int(true_class)] = 1.0
+                    #self.labels[i][j][int(true_class)] = 1.0
+                    sample_annotations[token_num, true_class] = 1.0
                 else: # multi-label or binary
                     # 0 indicates the None class, which we don't annotate, otherwise set the class to 1
                     if true_class > 0:
                         class_index = true_class - 1
-                        self.labels[i][j][int(class_index)] = 1.0
+                        #self.labels[i][j][int(class_index)] = 1.0
+                        sample_annotations[token_num, class_index] = 1.0
 
-        self.data = self.df["text"].tolist()
+            # add this sample (line) to the list of annotations
+            self.labels.append(sample_annotations)
+
         self._training_validation_split(self.data, self.labels)
+
         print("Number of lost tokens due to truncation:", num_lost)
 
     def preprocess(self, input_file, tokenizer):

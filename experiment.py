@@ -301,8 +301,8 @@ def run_multiclass_token_classification_dataset():
 
 
 def run_ade_miner():
-    training_data_filepath = '/home/sam/data/training_exp_data/ademiner/converted.tsv'
-    test_data_file_path = '/home/sam/data/training_exp_data/ademiner/converted.tsv'
+    training_data_filepath = '/home/sam/data/training_exp_data/ademiner/converted_all.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/ademiner/converted_all.tsv'
     language_model_name = Classifier.Classifier.PUBMED_BERT
     class_names = ['ade']
     num_classes = 1
@@ -321,8 +321,7 @@ def run_ade_miner():
                      validation_data=(val_x, val_y),
                      restore_best_weights=True,
                      early_stopping_patience=5,
-                     early_stopping_monitor='val_micro_F1',
-                     epochs=1)
+                     early_stopping_monitor='val_micro_F1')
     classifier.save_weights('temp_ade_miner_weights')
     #classifier.load_weights('temp_ade_miner_weights')
 
@@ -346,8 +345,8 @@ def run_ade_miner():
     classifier.evaluate_predictions(predictions, test_y, class_names, report_none=True)
 
 def run_i2b2_2010():
-    training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted.tsv'
-    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted.tsv'
+    training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted_all.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_all.tsv'
     language_model_name = Classifier.Classifier.BLUE_BERT_PUBMED_MIMIC
     class_names = ['none', 'problem', 'treatment', 'test']
     num_classes = len(class_names)
@@ -362,12 +361,12 @@ def run_i2b2_2010():
     val_x, val_y = data.get_validation_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_F1')
-    #classifier.save_weights('temp_i2b2_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_F1')
+    classifier.save_weights('temp_i2b2_weights')
     #classifier.load_weights('temp_i2b2_weights')
 
     # load the test data and evaluate
@@ -401,5 +400,5 @@ if __name__ == '__main__':
     #run_multiclass_token_classification_dataset()
 
     #output_gold_standard_brat_formats_for_ner()
-    run_ade_miner()
-    #run_i2b2_2010()
+    #run_ade_miner()
+    run_i2b2_2010()

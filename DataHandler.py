@@ -69,6 +69,7 @@ class TextClassificationDataHandler(DataHandler):
 class TokenClassifierDataHandler(DataHandler):
     def __init__(self, x_set, y_set, batch_size, classifier, shuffle_data=True):
         DataHandler.__init__(self, x_set, y_set, batch_size, classifier, shuffle_data=shuffle_data)
+        self._num_classes = classifier._num_classes
 
     #TODO - do I need to override the __len__ function? Currently it returns the number of lines (sentences) does that work correctly for this? I think it is OK, since we take in a line at a time and then output classifications for each token in that line
         
@@ -82,14 +83,22 @@ class TokenClassifierDataHandler(DataHandler):
         #trim the y_labels to be the max length of the batch
         num_samples = tokenized['input_ids'].shape[0]
         num_tokens = tokenized['input_ids'].shape[1]
-        num_classes = batch_y.shape[2]        
-        cropped_batch_y = np.zeros([num_samples, num_tokens, num_classes])
-        for i in range(num_samples):
-            # Note, this code assumes there is a tag for the CLS token, either modify your output, or label all CLS tokens as 0
-            # To label all CLS tokens as 0, cropped_bath_y[i][[:][:] = batch_y[i][1:num_tokens+1][:]
-            cropped_batch_y[i][:][:] = batch_y[i][:num_tokens][:]
-    
-        return (tokenized['input_ids'], tokenized['attention_mask']), cropped_batch_y
+
+        #cropped_batch_y = np.zeros([num_samples, num_tokens, self._num_classes])
+        #for i in range(num_samples):
+        #    # Note, this code assumes there is a tag for the CLS token, either modify your output, or label all CLS tokens as 0
+        #    # To label all CLS tokens as 0, cropped_bath_y[i][[:][:] = batch_y[i][1:num_tokens+1][:]
+        #    cropped_batch_y[i][:][:] = batch_y[i][:num_tokens][:]
+        #
+        #return (tokenized['input_ids'], tokenized['attention_mask']), cropped_batch_y
+
+        extended_batch_y = np.zeros([num_samples, num_tokens, self._num_classes])
+        for i, sample in enumerate(batch_y):
+            # The sample is a num_tokens x num_labels matrix
+            num_tokens = sample.shape[0]
+            extended_batch_y[i, :num_tokens, :] = sample[:, :]
+
+        return (tokenized['input_ids'], tokenized['attention_mask']), extended_batch_y
 
     def on_epoch_end(self):
         """
@@ -101,4 +110,5 @@ class TokenClassifierDataHandler(DataHandler):
             idxs = np.arange(len(self._x))
             np.random.shuffle(idxs)
             self._x = [self._x[idx] for idx in idxs]
-            self._y = self._y[idxs]
+            self._y = [self._y[idx] for idx in idxs]
+            #self._y = self._y[idxs]

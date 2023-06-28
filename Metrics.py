@@ -246,38 +246,66 @@ class MyMultiLabelTextClassificationMetrics:
     def __init__(self, num_classes):
         MyMultiLabelTextClassificationMetrics.num_classes = num_classes
 
-    def macro_F1(y_true, y_pred):
+    def macro_F1_with_none_class(y_true, y_pred):
         sum = 0
         for i in range(MyMultiLabelTextClassificationMetrics.num_classes):
             sum += MyMultiLabelTextClassificationMetrics.class_f1(y_true, y_pred, i)
         return sum/MyMultiLabelTextClassificationMetrics.num_classes
         
-    def macro_recall(y_true, y_pred):
+    def macro_recall_with_none_class(y_true, y_pred):
         sum = 0
         for i in range(MyMultiLabelTextClassificationMetrics.num_classes):
             sum += MyMultiLabelTextClassificationMetrics.class_recall(y_true, y_pred, i)
         return sum/MyMultiLabelTextClassificationMetrics.num_classes
         
-    def macro_precision(y_true, y_pred):
+    def macro_precision_with_none_class(y_true, y_pred):
         sum = 0
         for i in range(MyMultiLabelTextClassificationMetrics.num_classes):
             sum += MyMultiLabelTextClassificationMetrics.class_precision(y_true, y_pred, i)
         return sum/MyMultiLabelTextClassificationMetrics.num_classes
+
+    # NOTE: macro and micro scores assume the None class is the first encoded class
+    def macro_F1(y_true, y_pred):
+        sum = 0
+        for i in range(1,MyMultiLabelTextClassificationMetrics.num_classes):
+            sum += MyMultiLabelTextClassificationMetrics.class_f1(y_true, y_pred, i)
+        return sum / MyMultiLabelTextClassificationMetrics.num_classes
+
+    def macro_recall(y_true, y_pred):
+        sum = 0
+        for i in range(1,MyMultiLabelTextClassificationMetrics.num_classes):
+            sum += MyMultiLabelTextClassificationMetrics.class_recall(y_true, y_pred, i)
+        return sum / MyMultiLabelTextClassificationMetrics.num_classes
+
+    def macro_precision(y_true, y_pred):
+        sum = 0
+        for i in range(1,MyMultiLabelTextClassificationMetrics.num_classes):
+            sum += MyMultiLabelTextClassificationMetrics.class_precision(y_true, y_pred, i)
+        return sum / MyMultiLabelTextClassificationMetrics.num_classes
 
     def micro_F1(y_true, y_pred):
          precision = MyMultiLabelTextClassificationMetrics.micro_precision(y_true, y_pred)
          recall = MyMultiLabelTextClassificationMetrics.micro_recall(y_true, y_pred)
          return 2*((precision * recall)/(precision + recall + K.epsilon()))
 
-    def micro_recall(y_true, y_pred):
+    def micro_recall_with_none_class(y_true, y_pred):
         true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
         possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
         return true_positives / (possible_positives + K.epsilon())
 
-
-    def micro_precision(y_true, y_pred):
+    def micro_precision_with_none_class(y_true, y_pred):
         true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
         predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+        return true_positives / (predicted_positives + K.epsilon())
+
+    def micro_recall(y_true, y_pred):
+        true_positives = K.sum(K.round(K.clip(y_true[1::] * y_pred[1::], 0, 1)))
+        possible_positives = K.sum(K.round(K.clip(y_true[1::], 0, 1)))
+        return true_positives / (possible_positives + K.epsilon())
+
+    def micro_precision(y_true, y_pred):
+        true_positives = K.sum(K.round(K.clip(y_true[1::] * y_pred[1::], 0, 1)))
+        predicted_positives = K.sum(K.round(K.clip(y_pred[1::], 0, 1)))
         return true_positives / (predicted_positives + K.epsilon())
 
     # Counts the number of samples labeled with all zeros per epoch
