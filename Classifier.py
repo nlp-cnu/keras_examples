@@ -403,15 +403,16 @@ class MultiClassTextClassifier(Classifier):
 # for the final layer (softmax) and correct loss (CCE)
 class TokenClassifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
+    def __init__(self, language_model_name, num_classes, multi_class, language_model_trainable=Classifier.LANGUAGE_MODEL_TRAINABLE,
                  max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE,
-                 dropout_rate=Classifier.DROPOUT_RATE, multi_class=True):
+                 dropout_rate=Classifier.DROPOUT_RATE):
         '''
         This Classifier is for token classification tasks, if it is a multi-label or binary task, set multi_class=false
         '''
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
                             max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
+        self._multiclass = multi_class
 
         # create the language model
         language_model = self.load_language_model()
@@ -426,7 +427,7 @@ class TokenClassifier(Classifier):
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
 
         # create the output layer
-        if multi_class:
+        if self._multi_class:
             activation = 'softmax'
             loss_function = 'categorical_crossentropy'
         else: #multi-label or binary
@@ -441,7 +442,7 @@ class TokenClassifier(Classifier):
 
         # create the optimizer, metrics, and compile the model
         optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
-        my_metrics = MyMultiClassTokenClassificationMetrics(self._num_classes)
+        my_metrics = MyMultiClassTokenClassificationMetrics(self._num_classes, self._multi_class)
         metrics = my_metrics.get_all_metrics()
         self.model.compile(
             optimizer=optimizer,

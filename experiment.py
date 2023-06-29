@@ -400,5 +400,5 @@ if __name__ == '__main__':
     #run_multiclass_token_classification_dataset()
 
     #output_gold_standard_brat_formats_for_ner()
-    #run_ade_miner()
-    run_i2b2_2010()
+    run_ade_miner()
+    #run_i2b2_2010()

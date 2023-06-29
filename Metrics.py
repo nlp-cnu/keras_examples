@@ -18,9 +18,21 @@ import tensorflow as tf
 
 class MyMultiClassTokenClassificationMetrics:
     num_class = None
+    include_none = False
 
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, multi_class, include_none=False):
+        """
+        Metrics for token classification
+
+        :param: include_none: determines if none should be included in micro and macro scores for multiclass problems
+        """
         MyMultiClassTokenClassificationMetrics.num_classes = num_classes
+        MyMultiClassTokenClassificationMetrics.include_none = include_none
+
+        if multi_class:
+            MyMultiClassTokenClassificationMetrics.include_none = include_none
+        else:
+            MyMultiClassTokenClassificationMetrics.include_none = False
 
     def class_precision(y_true, y_pred, class_num):
         class_y_true = tf.gather(y_true, [class_num], axis=1)
@@ -46,35 +58,48 @@ class MyMultiClassTokenClassificationMetrics:
         return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
 
 
-    def macro_F1_with_none_class( y_true, y_pred):
+    def macro_F1( y_true, y_pred):
         return K.sum([MyMultiClassTokenClassificationMetrics.class_f1(y_true, y_pred, i) for i in range(MyMultiClassTokenClassificationMetrics.num_classes)]) / MyMultiClassTokenClassificationMetrics.num_classes
 
-    def macro_precision_with_none_class( y_true, y_pred):
+    def macro_precision( y_true, y_pred):
         return K.sum([MyMultiClassTokenClassificationMetrics.class_precision(y_true, y_pred, i) for i in range(MyMultiClassTokenClassificationMetrics.num_classes)]) / MyMultiClassTokenClassificationMetrics.num_classes
 
-    def macro_recall_with_none_class( y_true, y_pred):
+    def macro_recall( y_true, y_pred):
         return K.sum([MyMultiClassTokenClassificationMetrics.class_recall(y_true, y_pred, i) for i in range(MyMultiClassTokenClassificationMetrics.num_classes)]) / MyMultiClassTokenClassificationMetrics.num_classes
 
-    def macro_F1( y_true, y_pred):
+    def macro_F1_no_none_class( y_true, y_pred):
         return K.sum([MyMultiClassTokenClassificationMetrics.class_f1(y_true, y_pred, i) for i in range(1,MyMultiClassTokenClassificationMetrics.num_classes)]) / (MyMultiClassTokenClassificationMetrics.num_classes-1)
 
-    def macro_precision( y_true, y_pred):
+    def macro_precision_no_none_class( y_true, y_pred):
         return K.sum([MyMultiClassTokenClassificationMetrics.class_precision(y_true, y_pred, i) for i in range(1,MyMultiClassTokenClassificationMetrics.num_classes)]) / (MyMultiClassTokenClassificationMetrics.num_classes-1)
 
-    def macro_recall( y_true, y_pred):
+    def macro_recall_no_none_class( y_true, y_pred):
         return K.sum([MyMultiClassTokenClassificationMetrics.class_recall(y_true, y_pred, i) for i in range(1,MyMultiClassTokenClassificationMetrics.num_classes)]) / (MyMultiClassTokenClassificationMetrics.num_classes-1)
 
 
-    def micro_recall(y_true, y_pred):
+    def micro_recall_no_none_class(y_true, y_pred):
         true_positives = K.sum(K.round(K.clip(y_true[:,1:] * y_pred[:,1:], 0, 1)))
         possible_positives = K.sum(K.round(K.clip(y_true[:,1:], 0, 1)))
         recall = true_positives / (possible_positives + K.epsilon())
         return recall
 
 
-    def micro_precision(y_true, y_pred):
+    def micro_precision_no_none_class(y_true, y_pred):
         true_positives = K.sum(K.round(K.clip(y_true[:,1:] * y_pred[:,1:], 0, 1)))
         predicted_positives = K.sum(K.round(K.clip(y_pred[:,1:], 0, 1)))
+        precision = true_positives / (predicted_positives + K.epsilon())
+        return precision
+
+    def micro_recall(y_true, y_pred):
+        true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+        possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+        recall = true_positives / (possible_positives + K.epsilon())
+        return recall
+
+
+    def micro_precision(y_true, y_pred):
+        true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+        predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
         precision = true_positives / (predicted_positives + K.epsilon())
         return precision
 
@@ -89,12 +114,17 @@ class MyMultiClassTokenClassificationMetrics:
 
     def get_all_metrics(self):
         # add macro and micro metrics
-        metrics = [ #MyMultiClassTokenClassificationMetrics.num_neg,
-                    MyMultiClassTokenClassificationMetrics.macro_precision, MyMultiClassTokenClassificationMetrics.macro_recall, MyMultiClassTokenClassificationMetrics.macro_F1,
-                    MyMultiClassTokenClassificationMetrics.micro_precision, MyMultiClassTokenClassificationMetrics.micro_recall, MyMultiClassTokenClassificationMetrics.micro_F1 ]
+        if MyMultiClassTokenClassificationMetrics.include_none:
+            metrics = [ #MyMultiClassTokenClassificationMetrics.num_neg,
+                        MyMultiClassTokenClassificationMetrics.macro_precision, MyMultiClassTokenClassificationMetrics.macro_recall, MyMultiClassTokenClassificationMetrics.macro_F1,
+                        MyMultiClassTokenClassificationMetrics.micro_precision, MyMultiClassTokenClassificationMetrics.micro_recall, MyMultiClassTokenClassificationMetrics.micro_F1 ]
+        else:
+            metrics = [  # MyMultiClassTokenClassificationMetrics.num_neg,
+                MyMultiClassTokenClassificationMetrics.macro_precision_no_none_class(), MyMultiClassTokenClassificationMetrics.macro_recall_no_none_class(), MyMultiClassTokenClassificationMetrics.macro_F1_no_none_class(),
+                MyMultiClassTokenClassificationMetrics.micro_precision_no_none_class(), MyMultiClassTokenClassificationMetrics.micro_recall_no_none_class(), MyMultiClassTokenClassificationMetrics.micro_F1]
 
         # add individual class metrics
-        # there are at least 2 classes (always)
+        # there are at least 2 classes (always - positive and negative)
         metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c0, MyMultiClassTokenClassificationMetrics.recall_c0, MyMultiClassTokenClassificationMetrics.f1_c0])
         metrics.extend([MyMultiClassTokenClassificationMetrics.precision_c1, MyMultiClassTokenClassificationMetrics.recall_c1, MyMultiClassTokenClassificationMetrics.f1_c1])
         if MyMultiClassTokenClassificationMetrics.num_classes > 2:
