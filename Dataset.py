@@ -493,7 +493,7 @@ class TokenClassificationDataset(Dataset):
                 num_lost += num_tokens - max_num_tokens
 
             # create a matrix of annotations for this line. That is, vector per token in the line
-            #  up to the max_num_tokens  # TODO - do I need to truncate here? Isn't that handled by the data_Generator later?
+            #  up to the max_num_tokens
             #for j in range(num_tokens)[:max_num_tokens]:
             sample_annotations = np.zeros([num_tokens, num_classes])
             for token_num in range(num_tokens):
@@ -502,13 +502,11 @@ class TokenClassificationDataset(Dataset):
 
                 # create the vector for this annotation
                 if multi_class:
-                    #self.labels[i][j][int(true_class)] = 1.0
                     sample_annotations[token_num, true_class] = 1.0
                 else: # multi-label or binary
                     # 0 indicates the None class, which we don't annotate, otherwise set the class to 1
                     if true_class > 0:
                         class_index = true_class - 1
-                        #self.labels[i][j][int(class_index)] = 1.0
                         sample_annotations[token_num, class_index] = 1.0
 
             # add this sample (line) to the list of annotations
@@ -571,43 +569,6 @@ class TokenClassificationDataset(Dataset):
 
         # See if you can just return this new dataframe, instead of saving all of this extra data
         return df
-
-
-        
-    # Old code with hardcoded values which may be more interpretable
-    #def __init__(self, data_file_path, seed=SEED, validation_set_size=0):
-    #    Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size)
-
-        # read in data
-    #    df = pd.read_csv(data_file_path, delimiter='\t', names=['text', 'problem', 'treatment', 'test'], quoting=csv.QUOTE_NONE)#.dropna()
-    #    df['problem'] = df.problem.apply(literal_eval)
-    #    df['treatment'] = df.treatment.apply(literal_eval)
-    #    df['test'] = df.test.apply(literal_eval)
-    #    data = df['text'].fillna("").tolist()
-
-        # tokenize the data to generate y-values for each token
-        # self.model_name = model_name
-        # tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        # tokenized = tokenizer(data, padding=True, truncation=True, max_length=512, return_tensors='tf')
-
-        #TODO - I think there should be a more efficient (space-wise and time wise) way to do this
-        #       Right now, it creates a num_samples * max_length * num_classes matrix. It has to be
-        #       This way because of how the data is pushed through BERT. The length of the labels
-        #       must match the length of the samples. It is a lot of wasted space though
-        #TOOD - max_length is hardcoded in
-        #num_classes = 3
-        #max_length = 512
-        #labels = np.zeros([len(df['test']), max_length, num_classes])
-        #for i in range(len(df['test'])):
-        #    num_words = len(df['test'][i])
-        #    for j in range(num_words):
-        #        labels[i][j][0] = df['problem'][i][j]
-        #        labels[i][j][1] = df['treatment'][i][j]
-        #        labels[i][j][2] = df['test'][i][j]
-
-        # These two calls must be made at the end of creating a dataset
-        #self._training_validation_split(data, labels)
-        #self._determine_class_weights()
 
 
     #TODO - check this and all other with stats collected independently from the y-labels in the text files

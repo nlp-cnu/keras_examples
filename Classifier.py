@@ -760,11 +760,11 @@ class TokenClassifier(Classifier):
                     #tn += 1
 
         # convert tp, fp, fn into arrays and trim if not reporting none
-        if report_zeroth: # report for all classes (multi-label)
+        if report_zeroth: # report for all classes (binary and multi-label)
             tp = np.array(tp)
             fp = np.array(fp)
             fn = np.array(fn)
-        else: # report for all but the None class (binary and multiclass typically)
+        else: # report for all but the None class (multiclass typically)
             # take [1:] to remove the None Class
             tp = np.array(tp)[1:]
             fp = np.array(fp)[1:]
@@ -789,6 +789,9 @@ class TokenClassifier(Classifier):
         micro_precision = all_tp / (all_tp + all_fp)
         micro_recall = all_tp / (all_tp + all_fn)
         micro_f1 = (2 * micro_precision * micro_recall) / (micro_precision + micro_recall)
+
+        #micro_averaged_stats = {'precision': micro_precision, 'recall': micro_recall, 'f1': micro_f1}
+        #macro_avareged_stats = {'precision': macro_precision, 'recall': macro_recall, 'f1': macro_f1}
 
         # output the results in a nice format
         print("{:<12s} {:<12s} {:<10s} {:}    {:}".format("", "precision", "recall", "f1-score", "support"))
