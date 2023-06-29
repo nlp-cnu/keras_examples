@@ -308,69 +308,73 @@ def run_ade_miner():
     num_classes = 1
 
     # create classifier
-    classifier = TokenClassifier(language_model_name, num_classes, learning_rate=1e-5, multi_class=False)
+    classifier = TokenClassifier(language_model_name, num_classes, False, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
-                                      validation_set_size=0.2, shuffle_data=True, multi_class=False)
-    train_x, train_y = data.get_train_data()
-    val_x, val_y = data.get_validation_data()
+    #data = TokenClassificationDataset(training_data_filepath, num_classes, False, classifier.tokenizer,
+    #                                  validation_set_size=0.2, shuffle_data=True)
+    #train_x, train_y = data.get_train_data()
+    #val_x, val_y = data.get_validation_data()
 
     # train the model
-    classifier.train(train_x, train_y,
-                     validation_data=(val_x, val_y),
-                     restore_best_weights=True,
-                     early_stopping_patience=5,
-                     early_stopping_monitor='val_micro_F1')
-    classifier.save_weights('temp_ade_miner_weights')
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 restore_best_weights=True,
+    #                 early_stopping_patience=5,
+    #                 early_stopping_monitor='val_micro_F1')
+    #classifier.save_weights('temp_ade_miner_weights')
     #classifier.load_weights('temp_ade_miner_weights')
 
     # load the test data and evaluate
-    data = TokenClassificationDataset(test_data_file_path, num_classes, classifier.tokenizer,
-                                      validation_set_size=0.0, shuffle_data=False, multi_class=False)
+    data = TokenClassificationDataset(test_data_file_path, num_classes, False, classifier.tokenizer,
+                                      validation_set_size=0.0, shuffle_data=False)
     test_x, test_y = data.get_train_data()
 
     # evaluate performance on the validation set
-    predictions = classifier.predict(test_x)
+    #predictions = classifier.predict(test_x)
     import pickle
-    with open('temp_pred_file_ade.pkl', 'wb') as file:
-        pickle.dump(predictions, file)
-    #with open('temp_pred_file_ade.pkl', 'rb') as file:
-    #    predictions = pickle.load(file)
+    #with open('temp_pred_file_ade.pkl', 'wb') as file:
+    #    pickle.dump(predictions, file)
+    with open('temp_pred_file_ade.pkl', 'rb') as file:
+        predictions = pickle.load(file)
+
+    # convert predictions to binary
+    predictions = np.round(predictions)
 
     # output preditions to brat format
     # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
 
     # output performance
-    classifier.evaluate_predictions(predictions, test_y, class_names, report_none=True)
+    classifier.evaluate_predictions(predictions, test_y, class_names)
 
 def run_i2b2_2010():
     training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted_train.tsv'
-    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_test.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_all.tsv'
+    #test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_test.tsv'
     language_model_name = Classifier.Classifier.BLUE_BERT_PUBMED_MIMIC
     class_names = ['none', 'problem', 'treatment', 'test']
     num_classes = len(class_names)
 
     # create classifier
-    classifier = TokenClassifier(language_model_name, num_classes, learning_rate=1e-5)
+    classifier = TokenClassifier(language_model_name, num_classes, True, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    data = TokenClassificationDataset(training_data_filepath, num_classes, classifier.tokenizer,
-                                      validation_set_size=0.2, shuffle_data=True)
-    train_x, train_y = data.get_train_data()
-    val_x, val_y = data.get_validation_data()
+    #data = TokenClassificationDataset(training_data_filepath, num_classes, True, classifier.tokenizer,
+    #                                  validation_set_size=0.2, shuffle_data=True)
+    #train_x, train_y = data.get_train_data()
+    #val_x, val_y = data.get_validation_data()
 
     # train the model
-    classifier.train(train_x, train_y,
-                     validation_data=(val_x, val_y),
-                     restore_best_weights=True,
-                     early_stopping_patience=5,
-                     early_stopping_monitor='val_micro_F1')
-    classifier.save_weights('temp_i2b2_weights')
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 restore_best_weights=True,
+    #                 early_stopping_patience=5,
+    #                 early_stopping_monitor='val_micro_F1')
+    #classifier.save_weights('temp_i2b2_weights')
     #classifier.load_weights('temp_i2b2_weights')
 
     # load the test data and evaluate
-    data = TokenClassificationDataset(test_data_file_path, num_classes, classifier.tokenizer,
+    data = TokenClassificationDataset(test_data_file_path, num_classes, True, classifier.tokenizer,
                                       validation_set_size=0.0, shuffle_data=False)
     test_x, test_y = data.get_train_data()
 
@@ -382,6 +386,8 @@ def run_i2b2_2010():
     #    pickle.dump(predictions, file)
     with open('temp_pred_file.pkl', 'rb') as file:
         predictions = pickle.load(file)
+
+    #predictions = round(predictions)
 
     # output predictions to brat format
     # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')

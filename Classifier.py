@@ -412,7 +412,7 @@ class TokenClassifier(Classifier):
         Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable,
                             max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
-        self._multiclass = multi_class
+        self._multi_class = multi_class
 
         # create the language model
         language_model = self.load_language_model()
@@ -651,22 +651,41 @@ class TokenClassifier(Classifier):
                     f"T{entity_num}\t{annotation['class_name']} {annotation['span_start']} {annotation['span_end']}\t{annotation['span_text']}\n")
                 entity_num += 1
 
-    def evaluate_predictions(self, pred_y, true_y, class_names, multi_class=True, report_none=False):
+    def evaluate_predictions(self, pred_y, true_y, class_names):
         """
         Evaluates the predictions against true values. Predictions and Gold are from the classifier/dataset.
         They are a 3-D matrix [line, token, one-hot-vector of class]
 
-        :param pred_y: matrix of predicted values
+        :param pred_y: matrix of predicted labels (one-hot encoded 0's and 1's)
         :param true_y: matrix of true values
         :param class_names: an ordered list of class names (strings)
         :param report_none: if True, then results for the none class will be reported and averaged into micro
                   and macro scores. A None class is automatically added to the class_names
         :param multi_class: indicates if the labels are multi-class or multi-label
         """
+        # Set parameters depending on the classification type
+        # multi-class_case
+        if self._multi_class:
+            report_zeroth = False
+        # multi-label/binary case
+        else:
+            report_zeroth = True
+
+        binary_classification = False
+        if len(class_names) == 1:
+            binary_classification = True
+
         # grab dimensions
         num_lines = pred_y.shape[0]
         padded_token_length = pred_y.shape[1]
         num_classes = pred_y.shape[2]
+
+        # ensure the num predicted lines = num gold lines
+        if num_lines != len(true_y):
+            print("ERROR: the number of predicted lines does not equal the number of gold lines. "
+                  f"\n  num predicted lines = {num_lines}, num gold_lines = {len(true_y)}"
+                  "\n   Do your prediction and gold datasets match?")
+            exit()
 
         # ensure the class_names length matches the number of predicted classes
         if num_classes != len(class_names):
@@ -688,7 +707,7 @@ class TokenClassifier(Classifier):
             line_pred = pred_y[i, :num_tokens, :]
 
             # convert token classifications to categorical.
-            if multi_class:
+            if self._multi_class:
                 line_gold_categorical = np.argmax(line_gold, axis=1)
                 line_pred_categorical = np.argmax(line_pred, axis=1)
 
@@ -717,28 +736,41 @@ class TokenClassifier(Classifier):
         # count the tps, fps, fns
         num_samples = len(pred_flat)
         for i in range(num_samples):
-            true_index = gold_flat[i]
-            pred_index = pred_flat[i]
-            correct = pred_flat[i] == gold_flat[i]
 
-            if correct:
-                tp[true_index] += 1
-            else:
-                fp[pred_index] += 1
-                fn[true_index] += 1
+            # calculating tp, fp, fn for multiclass and binary is slightly different
+            # TODO - this may not work for multilabel
+            if not binary_classification:
+                true_index = gold_flat[i]
+                pred_index = pred_flat[i]
+                correct = pred_flat[i] == gold_flat[i]
+                if correct:
+                    tp[true_index] += 1
+                else:
+                    fp[pred_index] += 1
+                    fn[true_index] += 1
+
+            if binary_classification:
+                if gold_flat[i] == 1 and pred_flat[i] == 1:
+                    tp[0] += 1
+                elif gold_flat[i] == 0 and pred_flat[i] == 1:
+                    fp[0] += 1
+                elif gold_flat[i] == 1 and pred_flat[i] == 0:
+                    fn[0] += 1
+                #elif gold_flat[i] == 0 and pred_flat[i] == 0:
+                    #tn += 1
 
         # convert tp, fp, fn into arrays and trim if not reporting none
-        if report_none:
+        if report_zeroth: # report for all classes (multi-label)
             tp = np.array(tp)
             fp = np.array(fp)
             fn = np.array(fn)
-        else:
+        else: # report for all but the None class (binary and multiclass typically)
             # take [1:] to remove the None Class
             tp = np.array(tp)[1:]
             fp = np.array(fp)[1:]
             fn = np.array(fn)[1:]
 
-            if multi_class:
+            if self._multi_class:
                 class_names = class_names[1:]
 
         # calculate precision, recall, and f1 for each class

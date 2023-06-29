@@ -467,8 +467,8 @@ class TokenClassificationDataset(Dataset):
     This class is for token classification datasets. If it is a multi-label or binary dataset, set multi-class=False
     """
 
-    def __init__(self, data_file_path, num_classes, tokenizer, seed=SEED, validation_set_size=0, max_num_tokens=512,
-                 shuffle_data=True, multi_class=True):
+    def __init__(self, data_file_path, num_classes, multi_class, tokenizer, seed=SEED, validation_set_size=0, max_num_tokens=512,
+                 shuffle_data=True):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
         # TODO - add a class labels field, and add a warning if multi-label and no None.lower() Class
         self.num_classes = num_classes
