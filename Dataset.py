@@ -475,19 +475,17 @@ class TokenClassificationDataset(Dataset):
         self.tokenizer = tokenizer
 
         # load and preprocess the data
-        df = self.preprocess(data_file_path)
-        self.data = df["text"].tolist()
-        print ("HERE")
+        processed_text, categorical_labels = self.preprocess(data_file_path)
+        self.all_data = processed_text.tolist()
 
         # create the labels datastructure from the loaded labels in the data frame
-        self.labels = []
-
         # Convert from categorical encoding to binary encoding
         # Need to make a big array that is i x j x num_classes, where i is the ith token, j is the number of tokens
+        self.all_labels = []
         num_lost = 0
-        num_samples = len(df['annotation'])
+        num_samples = len(categorical_labels)
         for sample_num in range(num_samples):
-            num_tokens = len(df['annotation'][sample_num])
+            num_tokens = len(categorical_labels[sample_num])
 
             # check if the annotations are getting truncated
             if num_tokens > max_num_tokens:
@@ -499,7 +497,7 @@ class TokenClassificationDataset(Dataset):
             sample_annotations = np.zeros([num_tokens, num_classes])
             for token_num in range(num_tokens):
                 # grab the class the token belongs to
-                true_class = int(df['annotation'][sample_num][token_num])
+                true_class = int(categorical_labels[sample_num][token_num])
 
                 # create the vector for this annotation
                 if multi_class:
@@ -511,18 +509,18 @@ class TokenClassificationDataset(Dataset):
                         sample_annotations[token_num, class_index] = 1.0
 
             # add this sample (line) to the list of annotations
-            self.labels.append(sample_annotations)
+            self.all_labels.append(sample_annotations)
 
-        self._training_validation_split(self.data, self.labels)
+        self._training_validation_split(self.all_data, self.all_labels)
 
         print("Number of lost tokens due to truncation:", num_lost)
 
     def preprocess(self, input_file):
         # Want to grab the training data, expand all the labels using the tokenizer
         # Creates new label that accounts for the tokenization of a sample
-        def tokenize_sample(sample):
+        def tokenize_sample(df_sample):
             # get a list containing space separated tokens
-            tokens = sample['text'].split(' ')
+            tokens = df_sample['text'].split(' ')
 
             # get the length of each token
             token_lengths = []
@@ -537,7 +535,7 @@ class TokenClassificationDataset(Dataset):
             # add a 0 label for the [CLS] token
             new_labels.append(0)
             # extend each label to the number of tokens in that space separated "word"
-            labels = sample['annotation']
+            labels = df_sample['annotation']
             for i in range(len(labels)):
                 # add the new labels
                 labels_for_this_word = [labels[i]] * token_lengths[i]
@@ -552,7 +550,8 @@ class TokenClassificationDataset(Dataset):
             # else:
             #    print("MATCHED")
 
-            return new_labels
+            df_sample['annotation'] = new_labels
+            return df_sample
 
         # assumes classes are encoded as a real number, so a single annotation per class
         df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False,
@@ -582,8 +581,8 @@ class TokenClassificationDataset(Dataset):
         # expand the annotations to match the tokens (a word may be multiple tokens)
         df = df.apply(tokenize_sample, axis=1)
 
-        # See if you can just return this new dataframe, instead of saving all of this extra data
-        return df
+        # return the processed text and annotations
+        return df['text'], df['annotation']
 
 
     #TODO - check this and all other with stats collected independently from the y-labels in the text files
