@@ -472,13 +472,14 @@ class TokenClassificationDataset(Dataset):
         Dataset.__init__(self, seed=seed, validation_set_size=validation_set_size, shuffle_data=shuffle_data)
         # TODO - add a class labels field, and add a warning if multi-label and no None.lower() Class
         self.num_classes = num_classes
+        self.tokenizer = tokenizer
 
         # load and preprocess the data
-        df = self.preprocess(data_file_path, tokenizer)
+        df = self.preprocess(data_file_path)
         self.data = df["text"].tolist()
+        print ("HERE")
 
         # create the labels datastructure from the loaded labels in the data frame
-        #self.labels = np.zeros([len(self.df['annotation']), max_num_tokens, self.num_classes])
         self.labels = []
 
         # Convert from categorical encoding to binary encoding
@@ -516,39 +517,54 @@ class TokenClassificationDataset(Dataset):
 
         print("Number of lost tokens due to truncation:", num_lost)
 
-    def preprocess(self, input_file, tokenizer):
+    def preprocess(self, input_file):
         # Want to grab the training data, expand all the labels using the tokenizer
         # Creates new label that accounts for the tokenization of a sample
-        def tokenize_sample(sample, tokenizer):
-            # get a list containing the number of tokens split by space and punctuation
-            naive_tokens = re.findall(r'\b\w+\b|[^\s\w]', sample['text'])
-            token_lengths = [len(tok) - 2 for tok in tokenizer(naive_tokens)['input_ids']]
+        def tokenize_sample(sample):
+            # get a list containing space separated tokens
+            tokens = sample['text'].split(' ')
+
+            # get the length of each token
+            token_lengths = []
+            for token in tokens:
+                tokenized = self.tokenizer(token, return_tensors='tf')
+                length = len(tokenized['input_ids'][0])
+                length -= 2  # remove CLS and SEP
+                token_lengths.append(length)
 
             # Create the new labels, which maps the space separated labels to token labels
             new_labels = []
-            #add a 0 label for the [CLS] token
+            # add a 0 label for the [CLS] token
             new_labels.append(0)
-
             # extend each label to the number of tokens in that space separated "word"
             labels = sample['annotation']
             for i in range(len(labels)):
                 # add the new labels
                 labels_for_this_word = [labels[i]] * token_lengths[i]
                 new_labels.extend(labels_for_this_word)
-                # The code above (^) does this (v), but it is way faster
-                #for j in range(token_lengths[i]):
-                #    new_labels.append(labels[i])s
-
             # add a 0 label for the SEP token and return
             new_labels.append(0)
+
+            # check to make sure the lengths match (unnecessary, but useful for debugging)
+            # tokenized = self.tokenizer(sample['text'], return_tensors='tf')
+            # if(len(tokenized['input_ids'][0]) != len(new_labels)):
+            #    print(f"MISMATCH: {len(tokenized['input_ids'][0])}, {len(new_labels)}, {tokenized['input_ids']}, {sample['text']}")
+            # else:
+            #    print("MATCHED")
+
             return new_labels
 
         # assumes classes are encoded as a real number, so a single annotation per class
         df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False,
-                         quoting=csv.QUOTE_NONE)#, encoding='utf-8')
+                         quoting=csv.QUOTE_NONE)  # , encoding='utf-8')
 
-        #replace non-standard space characters with a space
+        # replace non-standard space characters with a space
         df['text'] = df['text'].apply(lambda x: regex.sub(r'\p{Zs}', ' ', x))
+
+        # add spaces between all 'naive' tokens which are the tokens with labels. This ensures the tokenizer
+        # will be equal to or longer than the number of labels (important for cases like "..." which contain 3
+        # labels (from pre-processing) but may only be treated as a single token
+        df['text'] = df['text'].apply(lambda x: ' '.join(re.findall(r'\b\w+\b|[^\s\w]', x)))
 
         # NOTE: This could make performance worse, but [UNK] tokens are a big problems for converting between formats
         # replace non-ascii characters with *
@@ -561,11 +577,10 @@ class TokenClassificationDataset(Dataset):
                     text_list[j] = '*'
             df.iloc[i]['text'] = "".join(text_list)
 
-
         # convert the annotation to numbers
         df['annotation'] = df['annotation'].apply(literal_eval)
         # expand the annotations to match the tokens (a word may be multiple tokens)
-        df['annotation'] = df.apply(tokenize_sample, tokenizer=tokenizer, axis=1)
+        df = df.apply(tokenize_sample, axis=1)
 
         # See if you can just return this new dataframe, instead of saving all of this extra data
         return df

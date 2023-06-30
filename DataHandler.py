@@ -96,6 +96,11 @@ class TokenClassifierDataHandler(DataHandler):
         for i, sample in enumerate(batch_y):
             # The sample is a num_tokens x num_labels matrix
             num_tokens = sample.shape[0]
+
+            # crop the labels if necessary
+            if sample.shape[1] >= self._max_length:
+                sample = sample[:self._max_length, :]
+
             extended_batch_y[i, :num_tokens, :] = sample[:, :]
 
         return (tokenized['input_ids'], tokenized['attention_mask']), extended_batch_y
