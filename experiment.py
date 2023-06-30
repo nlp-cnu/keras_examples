@@ -311,17 +311,17 @@ def run_ade_miner():
     classifier = TokenClassifier(language_model_name, num_classes, False, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    data = TokenClassificationDataset(training_data_filepath, num_classes, False, classifier.tokenizer,
-                                      validation_set_size=0.2, shuffle_data=True)
-    train_x, train_y = data.get_train_data()
-    val_x, val_y = data.get_validation_data()
+    #data = TokenClassificationDataset(training_data_filepath, num_classes, False, classifier.tokenizer,
+    #                                  validation_set_size=0.2, shuffle_data=True)
+    #train_x, train_y = data.get_train_data()
+    #val_x, val_y = data.get_validation_data()
 
     # train the model
-    classifier.train(train_x, train_y,
-                     validation_data=(val_x, val_y),
-                     restore_best_weights=True,
-                     early_stopping_patience=5,
-                     early_stopping_monitor='val_micro_F1')
+    #classifier.train(train_x, train_y,
+    #                 validation_data=(val_x, val_y),
+    #                 restore_best_weights=True,
+    #                 early_stopping_patience=5,
+    #                 early_stopping_monitor='val_micro_F1')
     #classifier.save_weights('temp_ade_miner_weights')
     #classifier.load_weights('temp_ade_miner_weights')
 

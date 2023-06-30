@@ -98,7 +98,7 @@ class TokenClassifierDataHandler(DataHandler):
             num_tokens = sample.shape[0]
 
             # crop the labels if necessary
-            if sample.shape[1] >= self._max_length:
+            if sample.shape[0] >= self._max_length:
                 sample = sample[:self._max_length, :]
 
             extended_batch_y[i, :num_tokens, :] = sample[:, :]
