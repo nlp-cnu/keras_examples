@@ -773,6 +773,9 @@ class TokenClassifier(Classifier):
             if self._multi_class:
                 class_names = class_names[1:]
 
+        # account for 0s which will result in division by 0
+        tp[tp == 0] += 1e-10
+                
         # calculate precision, recall, and f1 for each class
         precision = tp / (tp + fp)
         recall = tp / (tp + fn)

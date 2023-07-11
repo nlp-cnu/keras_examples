@@ -82,7 +82,7 @@ class TokenClassifierDataHandler(DataHandler):
 
         #trim the y_labels to be the max length of the batch
         num_samples = tokenized['input_ids'].shape[0]
-        num_tokens = tokenized['input_ids'].shape[1]
+        max_tokens_in_batch = tokenized['input_ids'].shape[1]
 
         #cropped_batch_y = np.zeros([num_samples, num_tokens, self._num_classes])
         #for i in range(num_samples):
@@ -92,7 +92,7 @@ class TokenClassifierDataHandler(DataHandler):
         #
         #return (tokenized['input_ids'], tokenized['attention_mask']), cropped_batch_y
 
-        extended_batch_y = np.zeros([num_samples, num_tokens, self._num_classes])
+        extended_batch_y = np.zeros([num_samples, max_tokens_in_batch, self._num_classes])
         for i, sample in enumerate(batch_y):
             # The sample is a num_tokens x num_labels matrix
             num_tokens = sample.shape[0]
