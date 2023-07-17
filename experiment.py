@@ -301,45 +301,43 @@ def run_multiclass_token_classification_dataset():
 
 
 def run_ade_miner():
-    training_data_filepath = '/home/sam/data/training_exp_data/ademiner/converted_all.tsv'
-    test_data_file_path = '/home/sam/data/training_exp_data/ademiner/converted_all.tsv'
+    data_filepath = '/home/sam/data/training_exp_data/ademiner/converted_all.tsv'
+    # No Test or Validation data is provided TODO - how to compare? 10, 20, 50% split?
+    test_set_size = 0.2 # percent of whole set
+    validation_set_size = 0.1 # percent of training set
     language_model_name = Classifier.Classifier.PUBMED_BERT
     class_names = ['ade']
-    num_classes = 1
+    num_classes = len(class_names)
 
     # create classifier
     classifier = TokenClassifier(language_model_name, num_classes, False, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    #data = TokenClassificationDataset(training_data_filepath, num_classes, False, classifier.tokenizer,
-    #                                  validation_set_size=0.2, shuffle_data=True)
-    #train_x, train_y = data.get_train_data()
-    #val_x, val_y = data.get_validation_data()
+    data = TokenClassificationDataset(data_filepath, num_classes, False, classifier.tokenizer,
+                                      validation_set_size=test_set_size, shuffle_data=True)
+    train_val_x, train_val_y = data.get_train_data()
+    test_x, test_y = data.get_validation_data()
 
+    # get a validation set from the training data
+    train_x, val_x, train_y, val_y = sklearn.model_selection.train_test_split(
+        train_val_x, train_val_y, test_size=validation_set_size, shuffle=True)
+    
     # train the model
     #classifier.train(train_x, train_y,
     #                 validation_data=(val_x, val_y),
     #                 restore_best_weights=True,
     #                 early_stopping_patience=5,
     #                 early_stopping_monitor='val_micro_F1')
-    #classifier.save_weights('temp_ade_miner_weights')
-    #classifier.load_weights('temp_ade_miner_weights')
-
-    # load the test data and evaluate
-    data = TokenClassificationDataset(test_data_file_path, num_classes, False, classifier.tokenizer,
-                                      validation_set_size=0.0, shuffle_data=False)
-    test_x, test_y = data.get_train_data()
+    #classifier.save_weights('ademiner_model_weights')
+    classifier.load_weights('ademiner_model_weights')
 
     # evaluate performance on the validation set
-    #predictions = classifier.predict(test_x)
+    predictions = classifier.predict(test_x)
     import pickle
-    #with open('temp_pred_file_ade.pkl', 'wb') as file:
-    #    pickle.dump(predictions, file)
-    with open('temp_pred_file_ade.pkl', 'rb') as file:
-        predictions = pickle.load(file)
-
-    # convert predictions to binary
-    predictions = np.round(predictions)
+    with open('ade_miner_test_predictions.pkl', 'wb') as file:
+        pickle.dump(predictions, file)
+    #with open('ade_miner_test_predictions.pkl', 'rb') as file:
+    #    predictions = pickle.load(file)
 
     # output preditions to brat format
     # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
@@ -347,10 +345,11 @@ def run_ade_miner():
     # output performance
     classifier.evaluate_predictions(predictions, test_y, class_names)
 
+
+##########################################################
 def run_i2b2_2010():
     training_data_filepath = '/home/sam/data/training_exp_data/i2b2/converted_train.tsv'
-    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_all.tsv'
-    #test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_test.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/i2b2/converted_test.tsv'
     language_model_name = Classifier.Classifier.BLUE_BERT_PUBMED_MIMIC
     class_names = ['none', 'problem', 'treatment', 'test']
     num_classes = len(class_names)
@@ -359,10 +358,60 @@ def run_i2b2_2010():
     classifier = TokenClassifier(language_model_name, num_classes, True, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    #data = TokenClassificationDataset(training_data_filepath, num_classes, True, classifier.tokenizer,
-    #                                  validation_set_size=0.2, shuffle_data=True)
-    #train_x, train_y = data.get_train_data()
-    #val_x, val_y = data.get_validation_data()
+    data = TokenClassificationDataset(training_data_filepath, num_classes, True, classifier.tokenizer,
+                                      validation_set_size=0.1, shuffle_data=True)
+    train_x, train_y = data.get_train_data()
+    val_x, val_y = data.get_validation_data()
+
+    # train the model
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_F1')
+    classifier.save_weights('i2b2_2010_model_weights')
+    #classifier.load_weights('i2b2_2010_model_weights')
+
+    # load the test data and evaluate
+    data = TokenClassificationDataset(test_data_file_path, num_classes, True, classifier.tokenizer,
+                                      validation_set_size=0.0, shuffle_data=False)
+    test_x, test_y = data.get_train_data()
+
+    # evaluate performance on the validation set
+    predictions = classifier.predict(test_x)
+    print ("i2b2 predictions = ", predictions)
+    
+    import pickle
+    with open('i2b2_2010_test_predictions', 'wb') as file:
+        pickle.dump(predictions, file)
+    #with open('i2b2_2010_test_predictions', 'rb') as file:
+    #    predictions = pickle.load(file)
+
+    # output predictions to brat format
+    # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
+
+    # output performance
+    classifier.evaluate_predictions(predictions, test_y, class_names)
+
+
+    
+##################################
+def run_n2c2_2019():
+    training_data_filepath = '/home/sam/data/training_exp_data/n2c2/converted_train.tsv'
+    test_data_file_path = '/home/sam/data/training_exp_data/n2c2/converted_test.tsv'
+    
+    language_model_name = Classifier.Classifier.PUBMED_BERT
+    class_names = ['none', 'drug', 'strength', 'form', 'dosage', 'frequency', 'route', 'duration', 'reason', 'ade']
+    num_classes = len(class_names)
+
+    # create classifier
+    classifier = TokenClassifier(language_model_name, num_classes, True, learning_rate=1e-5)
+
+    # load the data and split into train/validation
+    data = TokenClassificationDataset(training_data_filepath, num_classes, True, classifier.tokenizer,
+                                      validation_set_size=0.1, shuffle_data=True)
+    train_x, train_y = data.get_train_data()
+    val_x, val_y = data.get_validation_data()
 
     # train the model
     #classifier.train(train_x, train_y,
@@ -370,7 +419,7 @@ def run_i2b2_2010():
     #                 restore_best_weights=True,
     #                 early_stopping_patience=5,
     #                 early_stopping_monitor='val_micro_F1')
-    #classifier.save_weights('temp_i2b2_weights')
+    #classifier.save_weights('n2c2_2019_model_weights')
     #classifier.load_weights('temp_i2b2_weights')
 
     # load the test data and evaluate
@@ -382,13 +431,11 @@ def run_i2b2_2010():
     #predictions = classifier.predict(test_x)
 
     import pickle
-    #with open('temp_pred_file.pkl', 'wb') as file:
+    #with open('n2c2_2019_test_predictions.pkl', 'wb') as file:
     #    pickle.dump(predictions, file)
-    with open('temp_pred_file.pkl', 'rb') as file:
+    with open('n2c2_2019_test_predictions.pkl', 'rb') as file:
         predictions = pickle.load(file)
-
-    #predictions = round(predictions)
-
+   
     # output predictions to brat format
     # classifier.convert_predictions_to_brat_format(test_x, predictions, class_names,' ademiner_predictions')
 
@@ -406,5 +453,7 @@ if __name__ == '__main__':
     #run_multiclass_token_classification_dataset()
 
     #output_gold_standard_brat_formats_for_ner()
-    run_ade_miner()
-    #run_i2b2_2010()
+    #run_ade_miner()
+    run_i2b2_2010()
+    #run_n2c2_2019()
+    

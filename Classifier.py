@@ -674,6 +674,7 @@ class TokenClassifier(Classifier):
         binary_classification = False
         if len(class_names) == 1:
             binary_classification = True
+            pred_y = np.round(pred_y)
 
         # grab dimensions
         num_lines = pred_y.shape[0]
@@ -718,6 +719,8 @@ class TokenClassifier(Classifier):
                 line_gold_categorical = np.argmax(line_gold, axis=1) + not_none
                 not_none = np.max(line_pred, axis=1) > 0
                 line_pred_categorical = np.argmax(line_pred, axis=1) + not_none
+                #TODO - this doesn't make sense to convert to categorical for multi-label. But, it does for binary
+                #TODO - for binary we need to round. I should probably do it here rather than passing it in first
 
             # add to the flattened list of labels
             gold_flat.extend(line_gold_categorical.tolist())
@@ -774,6 +777,7 @@ class TokenClassifier(Classifier):
                 class_names = class_names[1:]
 
         # account for 0s which will result in division by 0
+        tp = tp.astype(float) # convert to a float
         tp[tp == 0] += 1e-10
                 
         # calculate precision, recall, and f1 for each class
