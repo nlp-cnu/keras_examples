@@ -437,13 +437,18 @@ class TokenClassifier(Classifier):
         output_layer = tf.keras.layers.Dense(self._num_classes, activation=activation)
         final_output = output_layer(embeddings)
 
-        # combine the language model with the classificaiton part
-        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-
-        # create the optimizer, metrics, and compile the model
-        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
-        my_metrics = MyMultiClassTokenClassificationMetrics(self._num_classes, self._multi_class)
+        # set the metrics
+        if self._multi_class:
+            my_metrics = MultiClassTokenClassificationMetrics(self._num_classes)
+        elif self._num_classes == 1:
+            my_metrics = BinaryTokenClassificationMetrics(self._num_classes)
+        else:
+            my_metrics = MultiLabelTokenClassificationMetrics(self._num_classes)    
         metrics = my_metrics.get_all_metrics()
+
+        # Combine the language model, set the optimizer and compile
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
         self.model.compile(
             optimizer=optimizer,
             loss=loss_function,
