@@ -13,7 +13,6 @@ from abc import ABC, abstractmethod
 
 import re
 
-
 class Classifier(ABC):
     '''
     Classifier class, which holds a language model and a classifier
@@ -527,22 +526,32 @@ class TokenClassifier(Classifier):
         # So, we need to map the tokenized text to the original text and create our spans accordingly
         num_classes = len(class_names)
         previous_text_length = 0
+        line_start = 0
         annotations = []
 
-        # create a document text to grab spans from
-        document_text = ''
-        for text_line in x:
-            document_text += "\n" + text_line
+        # create a document text to grab spans from. x contains the text broken into lines
+        document_text = x[0]
+        for i in range(1, len(x)):
+            document_text += "\n" + x[i]
 
         # iterate over each lines
         for x_line, y_line in zip(x, y):
+            
+            # set the previuos text length to the character index of the start of this line
+            # we want to do this here rather than iteratively counting in case a line
+            # in truncated (might happen when num_tokens > max_length
+            previous_text_length = line_start
+            # update line start for the next line
+            # add one because you will start one character ahead of the end character of this line
+            line_start += len(x_line)+1 
+
             # tokenize the line so that it corresponds with the labels
             if max_length is None:
                 tokens = self.tokenizer(x_line, return_tensors='tf')
             else:
                 tokens = self.tokenizer(x_line, return_tensors='tf', max_length=max_length)
             tokens = self.tokenizer.convert_ids_to_tokens(tokens['input_ids'].numpy()[0])
-
+            
             # remove the CLS and SEP tokens and their labels
             del tokens[0]
             del tokens[-1]
@@ -559,8 +568,25 @@ class TokenClassifier(Classifier):
             # matcher for finding white space (pre-compile it out of the loop)
             matcher = re.compile('\s')  # —™…’“”®
             for token, labels in zip(tokens, y_line):  # TODO - zipping these together will truncate the text (if its longer)
+                
                 # find the length of this text (used to update the previous text length)
                 token_text = token.replace("##", "")  # remove word piece embedding characters
+
+                # check for UNK tokens which can create span mismatches
+                if token == '[UNK]':
+                    # grab the single character. 
+                    token_text = document_text[previous_text_length]
+
+                    # you may have just grabbed white space rather than the character, so
+                    #   keep checking to see if you have just white space. Then, stop once
+                    #   you get to the character
+                    temp_previous_text_length = previous_text_length
+                    while matcher.match(document_text[temp_previous_text_length]):
+                        temp_previous_text_length += 1
+                        token_text = document_text[temp_previous_text_length]
+                    print (f"[UNK] token encountered, but updated it to {token_text}")
+                    
+                # get the length of this token
                 this_text_length = len(token_text)
 
                 # count white space characters and update the previous text length
@@ -576,20 +602,25 @@ class TokenClassifier(Classifier):
                 span_end = previous_text_length + this_text_length
                 span_text = document_text[span_start:span_end]
 
-                if span_text.lower() != token_text:
+                if span_text.lower() != token_text.lower():
                     if token_text == '[UNK]':
-                        print(f"unknown token: {span_text}")
+                        # update this text length to be 1, because all(?) or at least most
+                        #    unknown tokens are a single weird character. So far this has
+                        #    worked, but may need to update it for special cases
+                        this_text_length = 1
+                        span_end = previous_text_length + this_text_length
+                        span_text = document_text[span_start:span_end]
                     else:
                         print("Warning span and token text do not match:")
                         print(f"    {x_line}")
                         print(f"   {span_start}, {span_end}")
                         print(f"   *{span_text}*, *{token_text}*")
+                        print(f"all line tokens = {tokens}")
                         exit()
-                # else:
-                #    print(f"   span and tokens match: {span_start}, {span_end} = {span_text}, {token_text}")
 
                 # output for each true class
-                for i in range(num_classes):
+                #   start at 1 to skip the None Class
+                for i in range(1,num_classes): 
                     if labels[i] == 1:
                         span_start = previous_text_length
                         span_end = previous_text_length + this_text_length
@@ -662,7 +693,7 @@ class TokenClassifier(Classifier):
         They are a 3-D matrix [line, token, one-hot-vector of class]
 
         :param pred_y: matrix of predicted labels (one-hot encoded 0's and 1's)
-        :param true_y: matrix of true values
+        :param true_y: matrix of true values (one-hot encoded 0s and 1's)
         :param class_names: an ordered list of class names (strings)
         :param report_none: if True, then results for the none class will be reported and averaged into micro
                   and macro scores. A None class is automatically added to the class_names

@@ -29,7 +29,7 @@ def replicate_i2b2_relex_results():
                      #  Right now it will always train for 20 epochs then
                      #  restore the weights with the best val_loss
                      early_stopping_patience = 20,
-                     early_stopping_monitor = 'micro_F1'
+                     early_stopping_monitor = 'micro_f1'
     )
     
     #load the test data and make predictions
@@ -133,7 +133,7 @@ def run_i2b2_dataset():
                      batch_size=batch_size,
                      validation_data=(val_x, val_y),
                      early_stopping_patience = 5,
-                     early_stopping_monitor = 'val_micro_F1',
+                     early_stopping_monitor = 'val_micro_f1',
                      test_data = (test_x, test_y)
     )
     
@@ -182,7 +182,7 @@ def run_n2c2_dataset_multilabel():
                      batch_size=batch_size,
                      validation_data=(val_x, val_y),
                      early_stopping_patience = 5,
-                     early_stopping_monitor = 'val_micro_F1'
+                     early_stopping_monitor = 'val_micro_f1'
                      #test_data = (test_x, test_y)
     )
     
@@ -221,7 +221,7 @@ def run_n2c2_dataset_multiclass():
                      batch_size=batch_size,
                      validation_data=(val_x, val_y),
                      early_stopping_patience = 5,
-                     early_stopping_monitor = 'val_micro_F1'
+                     early_stopping_monitor = 'val_micro_f1'
                      #test_data = (test_x, test_y)
     )
     classifier.save_weights("my_models/temp_weights")

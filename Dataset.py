@@ -521,7 +521,7 @@ class TokenClassificationDataset(Dataset):
         def tokenize_sample(df_sample):
             # get a list containing space separated tokens
             tokens = df_sample['text'].split(' ')
-
+            
             # get the length of each token
             token_lengths = []
             for token in tokens:
@@ -529,7 +529,7 @@ class TokenClassificationDataset(Dataset):
                 length = len(tokenized['input_ids'][0])
                 length -= 2  # remove CLS and SEP
                 token_lengths.append(length)
-
+            
             # Create the new labels, which maps the space separated labels to token labels
             new_labels = []
             # add a 0 label for the [CLS] token
@@ -542,20 +542,21 @@ class TokenClassificationDataset(Dataset):
                 new_labels.extend(labels_for_this_word)
             # add a 0 label for the SEP token and return
             new_labels.append(0)
-
+            
             # check to make sure the lengths match (unnecessary, but useful for debugging)
-            # tokenized = self.tokenizer(sample['text'], return_tensors='tf')
-            # if(len(tokenized['input_ids'][0]) != len(new_labels)):
-            #    print(f"MISMATCH: {len(tokenized['input_ids'][0])}, {len(new_labels)}, {tokenized['input_ids']}, {sample['text']}")
-            # else:
+            tokenized = self.tokenizer(df_sample['text'], return_tensors='tf')
+            if(len(tokenized['input_ids'][0]) != len(new_labels)):
+                print(f"MISMATCH: {len(tokenized['input_ids'][0])}, {len(new_labels)}, {tokenized['input_ids']}, {df_sample['text']}")
+                exit()
+            #else:
             #    print("MATCHED")
 
             df_sample['annotation'] = new_labels
             return df_sample
 
         # assumes classes are encoded as a real number, so a single annotation per class
-        df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'], keep_default_na=False,
-                         quoting=csv.QUOTE_NONE)  # , encoding='utf-8')
+        df = pd.read_csv(input_file, delimiter='\t', header=None, names=['text', 'annotation'],
+                         keep_default_na=False, quoting=csv.QUOTE_NONE)  # , encoding='utf-8')
 
         # replace non-standard space characters with a space
         df['text'] = df['text'].apply(lambda x: regex.sub(r'\p{Zs}', ' ', x))

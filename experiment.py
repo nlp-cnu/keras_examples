@@ -327,7 +327,7 @@ def run_ade_miner():
     #                 validation_data=(val_x, val_y),
     #                 restore_best_weights=True,
     #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_F1')
+    #                 early_stopping_monitor='val_micro_f1')
     #classifier.save_weights('ademiner_model_weights')
     classifier.load_weights('ademiner_model_weights')
 
@@ -368,7 +368,7 @@ def run_i2b2_2010():
                      validation_data=(val_x, val_y),
                      restore_best_weights=True,
                      early_stopping_patience=5,
-                     early_stopping_monitor='val_micro_F1')
+                     early_stopping_monitor='val_micro_f1')
     classifier.save_weights('i2b2_2010_model_weights')
     #classifier.load_weights('i2b2_2010_model_weights')
 
@@ -418,7 +418,7 @@ def run_n2c2_2019():
     #                 validation_data=(val_x, val_y),
     #                 restore_best_weights=True,
     #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_F1')
+    #                 early_stopping_monitor='val_micro_f1')
     #classifier.save_weights('n2c2_2019_model_weights')
     #classifier.load_weights('temp_i2b2_weights')
 

@@ -8,6 +8,7 @@ import tensorflow as tf
 #from tensorflow.python.ops.numpy_ops import np_config
 #np_config.enable_numpy_behavior()
 
+from Metrics import *
 
 #Note: I hate this code, its a mess, but you can't pass object methods into keras because self counts as the first positional argument. So, I think this is the best I can do for now
 
@@ -15,13 +16,9 @@ import tensorflow as tf
 
 #Note: Remember that the metrics are averaged over each batch, so the reported precision, recall, F1 may be different than if it is calculated over the entire dataset at once. The results reported here tend to be lower than the actual scores (from my limited observation).
 
-
-class BinaryTokenClassificationMetrics(MultiLabelTokenClassificationMetrics):
-    # These work the same as multilabel classification metrics
-    pass
     
 
-class MultiLabelTokenClassificationMetrics(TokenClassificationMetrics):
+class MultiLabelTokenClassificationMetrics():
     num_classes = None
 
     def __init__(self, num_classes):
@@ -41,7 +38,19 @@ class MultiLabelTokenClassificationMetrics(TokenClassificationMetrics):
         #    tf.print(K.sum([self.class_f1_binary_multilabel(y_true, y_pred, 0)]))
         #    tf.print("")
         
-        return K.sum([MultiLabelTokenClassificationMetrics.class_f1_binary_multilabel(y_true, y_pred, i) for i in range(MultiLabelTokenClassificationMetrics.num_classes)]) / MultiLabelTokenClassificationMetrics.num_classes
+        return K.sum([MultiLabelTokenClassificationMetrics.class_f1(y_true, y_pred, i) for i in range(MultiLabelTokenClassificationMetrics.num_classes)]) / MultiLabelTokenClassificationMetrics.num_classes
+
+    def macro_recall(y_true, y_pred):
+        sum = 0
+        for i in range(MultiLabelTokenClassificationMetrics.num_classes):
+            sum += MultiLabelTokenClassificationMetrics.class_recall(y_true, y_pred, i)
+        return sum/MultiLabelTokenClassificationMetrics.num_classes
+        
+    def macro_precision(y_true, y_pred):
+        sum = 0
+        for i in range(MultiLabelTokenClassificationMetrics.num_classes):
+            sum += MultiLabelTokenClassificationMetrics.class_precision(y_true, y_pred, i)
+        return sum/MultiLabelTokenClassificationMetrics.num_classes
 
     def micro_f1(y_true, y_pred):
         precision = MultiLabelTokenClassificationMetrics.micro_precision(y_true, y_pred)
@@ -87,8 +96,8 @@ class MultiLabelTokenClassificationMetrics(TokenClassificationMetrics):
     def get_all_metrics(self):
         # add macro and micro metrics
         metrics = [ #MultiLabelTokenClassificationMetrics.num_neg,
-            MultiLabelTokenClassificationMetrics.macro_precision, MultiLabelTokenClassificationMetrics.macro_recall, MultiLabelTokenClassificationMetrics.macro_F1,
-            MultiLabelTokenClassificationMetrics.micro_precision, MultiLabelTokenClassificationMetrics.micro_recall, MultiLabelTokenClassificationMetrics.micro_F1 ]
+            MultiLabelTokenClassificationMetrics.macro_precision, MultiLabelTokenClassificationMetrics.macro_recall, MultiLabelTokenClassificationMetrics.macro_f1,
+            MultiLabelTokenClassificationMetrics.micro_precision, MultiLabelTokenClassificationMetrics.micro_recall, MultiLabelTokenClassificationMetrics.micro_f1 ]
 
         # add individual class metrics
         # there are at least 2 classes (always - positive and negative)
@@ -247,6 +256,9 @@ class MultiLabelTokenClassificationMetrics(TokenClassificationMetrics):
         return MultiLabelTokenClassificationMetrics.class_f1(y_true, y_pred, 12)    
 
 
+class BinaryTokenClassificationMetrics(MultiLabelTokenClassificationMetrics):
+    # These work the same as multilabel classification metrics
+    pass
 
     
     
@@ -262,6 +274,18 @@ class MultiClassTokenClassificationMetrics:
     def macro_f1(y_true, y_pred):
         return K.sum([MultiClassTokenClassificationMetrics.class_f1(y_true, y_pred, i) for i in range(1, MultiClassTokenClassificationMetrics.num_classes)]) / MultiClassTokenClassificationMetrics.num_classes
 
+    def macro_recall(y_true, y_pred):
+        sum = 0
+        for i in range(MultiClassTokenClassificationMetrics.num_classes):
+            sum += MultiClassTokenClassificationMetrics.class_recall(y_true, y_pred, i)
+        return sum/MultiClassTokenClassificationMetrics.num_classes
+        
+    def macro_precision(y_true, y_pred):
+        sum = 0
+        for i in range(MultiClassTokenClassificationMetrics.num_classes):
+            sum += MultiClassTokenClassificationMetrics.class_precision(y_true, y_pred, i)
+        return sum/MultiClassTokenClassificationMetrics.num_classes
+    
     
     def micro_f1(y_true, y_pred):
         precision = MultiClassTokenClassificationMetrics.micro_precision(y_true, y_pred)
@@ -358,8 +382,8 @@ class MultiClassTokenClassificationMetrics:
     def get_all_metrics(self):
         # add macro and micro metrics
         metrics = [ #MultiClassTokenClassificationMetrics.num_neg,
-            MultiClassTokenClassificationMetrics.macro_precision, MultiClassTokenClassificationMetrics.macro_recall, MultiClassTokenClassificationMetrics.macro_F1,
-            MultiClassTokenClassificationMetrics.micro_precision, MultiClassTokenClassificationMetrics.micro_recall, MultiClassTokenClassificationMetrics.micro_F1 ]
+            MultiClassTokenClassificationMetrics.macro_precision, MultiClassTokenClassificationMetrics.macro_recall, MultiClassTokenClassificationMetrics.macro_f1,
+            MultiClassTokenClassificationMetrics.micro_precision, MultiClassTokenClassificationMetrics.micro_recall, MultiClassTokenClassificationMetrics.micro_f1 ]
 
         # add individual class metrics
         # there are at least 2 classes (always - positive and negative)
@@ -519,8 +543,6 @@ class MultiClassTokenClassificationMetrics:
 
 
 
-
-    
 class MyMultiLabelTextClassificationMetrics:
 
     num_classes = None
@@ -528,7 +550,7 @@ class MyMultiLabelTextClassificationMetrics:
     def __init__(self, num_classes):
         MyMultiLabelTextClassificationMetrics.num_classes = num_classes
 
-    def macro_F1(y_true, y_pred):
+    def macro_f1(y_true, y_pred):
         sum = 0
         for i in range(MyMultiLabelTextClassificationMetrics.num_classes):
             sum += MyMultiLabelTextClassificationMetrics.class_f1(y_true, y_pred, i)
@@ -546,7 +568,7 @@ class MyMultiLabelTextClassificationMetrics:
             sum += MyMultiLabelTextClassificationMetrics.class_precision(y_true, y_pred, i)
         return sum/MyMultiLabelTextClassificationMetrics.num_classes
 
-    def micro_F1(y_true, y_pred):
+    def micro_f1(y_true, y_pred):
         precision = MyMultiLabelTextClassificationMetrics.micro_precision(y_true, y_pred)
         recall = MyMultiLabelTextClassificationMetrics.micro_recall(y_true, y_pred)
         return 2 * ((precision * recall) / (precision + recall + K.epsilon()))
@@ -607,8 +629,8 @@ class MyMultiLabelTextClassificationMetrics:
     def get_all_metrics(self):
         # add macro and micro metrics
         metrics = [ MyMultiLabelTextClassificationMetrics.num_neg,
-                    MyMultiLabelTextClassificationMetrics.macro_precision, MyMultiLabelTextClassificationMetrics.macro_recall, MyMultiLabelTextClassificationMetrics.macro_F1,
-                    MyMultiLabelTextClassificationMetrics.micro_precision, MyMultiLabelTextClassificationMetrics.micro_recall, MyMultiLabelTextClassificationMetrics.micro_F1]
+                    MyMultiLabelTextClassificationMetrics.macro_precision, MyMultiLabelTextClassificationMetrics.macro_recall, MyMultiLabelTextClassificationMetrics.macro_f1,
+                    MyMultiLabelTextClassificationMetrics.micro_precision, MyMultiLabelTextClassificationMetrics.micro_recall, MyMultiLabelTextClassificationMetrics.micro_f1]
 
         # add individual class metrics
         # there are at least 2 classes (always)
@@ -772,7 +794,7 @@ class MyMultiClassTextClassificationMetrics:
         MyMultiClassTextClassificationMetrics.num_classes = num_classes
     #TODO - These assume the None class is class 0 and remove it from the metrics
 
-    def macro_F1(y_true, y_pred):
+    def macro_f1(y_true, y_pred):
         sum = 0
         for i in range(1, MyMultiClassTextClassificationMetrics.num_classes):
             sum += MyMultiClassTextClassificationMetrics.class_f1(y_true, y_pred, i)
@@ -790,7 +812,7 @@ class MyMultiClassTextClassificationMetrics:
             sum += MyMultiClassTextClassificationMetrics.class_precision(y_true, y_pred, i)
         return sum/MyMultiClassTextClassificationMetrics.num_classes-1
 
-    def micro_F1(y_true, y_pred):
+    def micro_f1(y_true, y_pred):
          precision = MyMultiClassTextClassificationMetrics.micro_precision(y_true, y_pred)
          recall = MyMultiClassTextClassificationMetrics.micro_recall(y_true, y_pred)
          return 2*((precision * recall)/(precision + recall + K.epsilon()))
@@ -851,8 +873,8 @@ class MyMultiClassTextClassificationMetrics:
     def get_all_metrics(self):
         # add macro and micro metrics
         metrics = [ MyMultiClassTextClassificationMetrics.num_neg,
-                    MyMultiClassTextClassificationMetrics.macro_precision, MyMultiClassTextClassificationMetrics.macro_recall, MyMultiClassTextClassificationMetrics.macro_F1,
-                    MyMultiClassTextClassificationMetrics.micro_precision, MyMultiClassTextClassificationMetrics.micro_recall, MyMultiClassTextClassificationMetrics.micro_F1]
+                    MyMultiClassTextClassificationMetrics.macro_precision, MyMultiClassTextClassificationMetrics.macro_recall, MyMultiClassTextClassificationMetrics.macro_f1,
+                    MyMultiClassTextClassificationMetrics.micro_precision, MyMultiClassTextClassificationMetrics.micro_recall, MyMultiClassTextClassificationMetrics.micro_f1]
 
         # add individual class metrics
         # there are at least 2 classes (always)
