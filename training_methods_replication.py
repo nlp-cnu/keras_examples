@@ -4,14 +4,23 @@ from Dataset import *
 
 
 def output_predictions_for_comparison():
+    print ("i2b2")
     run_i2b2_2010()
+    print ("n2c2")
     run_n2c2_2019()
+    print ("cdr")
     run_cdr()
-    run_bc7dcpi() 
+    print ("bc7dcpi")
+    run_bc7dcpi()
+    print ("nlmchem")
     run_nlmchem()
+    print ("ncbi")
     run_ncbi()
+    print ("bc7med")
     run_bc7med()
+    print ("cometa")
     run_cometa()
+    print ("ademiner")
     run_ademiner()
 
 
@@ -35,12 +44,12 @@ def run_i2b2_2010():
     val_x, val_y = data.get_validation_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/i2b2/i2b2_2010_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/i2b2/i2b2_2010_model_weights')
     #classifier.load_weights('complete/i2b2/i2b2_2010_model_weights')
 
     # load the test data 
@@ -50,7 +59,6 @@ def run_i2b2_2010():
 
     #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/i2b2/gold/i2b2_2010_test', max_length=None)
-    return
     
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -60,7 +68,7 @@ def run_i2b2_2010():
     #    predictions = pickle.load(file)
      
     # converted from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2) #TODO - check this
+    predicted_class_indeces = np.argmax(predictions, axis=2)
     converted_predictions = np.zeros(predictions.shape)
     for sent in range(predictions.shape[0]):
         for token in range(predictions.shape[1]):
@@ -88,18 +96,18 @@ def run_n2c2_2019():
     classifier = TokenClassifier(language_model_name, num_classes, multi_class, learning_rate=1e-5)
 
     # load the data and split into train/validation
-    data = TokenClassificationDataset(training_data_filepath, num_classes, multi_class, classifier.tokenizer,
-                                      validation_set_size=0.1, shuffle_data=True)
+    data = TokenClassificationDataset(training_data_filepath, num_classes, multi_class,
+                                      classifier.tokenizer, validation_set_size=0.1, shuffle_data=True)
     train_x, train_y = data.get_train_data()
     val_x, val_y = data.get_validation_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/n2c2/n2c2_2019_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/n2c2/n2c2_2019_model_weights')
     #classifier.load_weights('complete/n2c2/n2c2_2019_model_weights')
 
     # load the test data
@@ -109,7 +117,6 @@ def run_n2c2_2019():
 
     #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/n2c2/gold/n2c2_2019_test', max_length=None)
-    return
 
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -118,13 +125,13 @@ def run_n2c2_2019():
     #with open('complete/n2c2/n2c2_2019_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
 
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
    
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/n2c2/system/n2c2_2019_test')
@@ -132,7 +139,7 @@ def run_n2c2_2019():
     # output performance
     classifier.evaluate_predictions(converted_predictions, test_y, class_names)
 
-
+    
 def run_cdr():
     training_data_filepath = '/home/sam/data/training_exp_data/cdr/converted_train.tsv'
     validation_data_file_path = '/home/sam/data/training_exp_data/cdr/converted_val.tsv'
@@ -156,12 +163,12 @@ def run_cdr():
     val_x, val_y = data.get_train_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/cdr/cdr_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/cdr/cdr_model_weights')
     #classifier.load_weights('compelte/cdr/cdr_model_weights')
 
     # load the test data
@@ -171,7 +178,6 @@ def run_cdr():
 
     #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/cdr/gold/cdr_test', max_length=None)
-    return
     
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -180,15 +186,15 @@ def run_cdr():
     #with open('complete/cdr/cdr_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
 
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
 
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
-    
+        
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/cdr/system/cdr_test')
 
@@ -219,12 +225,12 @@ def run_bc7dcpi():
     val_x, val_y = data.get_train_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/bc7dcpi/bc7dcpi_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/bc7dcpi/bc7dcpi_model_weights')
     #classifier.load_weights('complete/bc7dcpi/bc7dcpi_model_weights')
 
     # load the test data
@@ -234,7 +240,6 @@ def run_bc7dcpi():
 
      #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/bc7dcpi/gold/bc7dcpi_test', max_length=None)
-    return
 
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -243,15 +248,15 @@ def run_bc7dcpi():
     #with open('complete/bc7dcpi/bc7dcpi_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
 
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
 
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
-
+        
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/bc7dcpi/system/bc7dcpi_test')
 
@@ -281,12 +286,12 @@ def run_nlmchem():
     val_x, val_y = data.get_train_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/nlmchem/nlmchem_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/nlmchem/nlmchem_model_weights')
     #classifier.load_weights('complete/nlmchem/nlmchem_model_weights')
 
     # load the test data
@@ -296,7 +301,6 @@ def run_nlmchem():
 
     #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/nlmchem/gold/nlmchem_test', max_length=None)
-    return
 
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -304,16 +308,15 @@ def run_nlmchem():
         pickle.dump(predictions, file)
     #with open('complete/nlmchem/nlmchem_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
-
-
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
     
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
+        
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/nlmchem/system/nlmchem_test')
 
@@ -343,13 +346,13 @@ def run_ncbi():
                                       validation_set_size=0.0, shuffle_data=True)
     val_x, val_y = data.get_train_data()
 
-    # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/ncbi/ncbi_model_weights')
+    #train the model
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/ncbi/ncbi_model_weights')
     #classifier.load_weights('complete/ncbi/ncbi_model_weights')
 
     # load the test data
@@ -359,8 +362,6 @@ def run_ncbi():
 
     #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/ncbi/gold/ncbi_test', max_length=None)
-
-    return
     
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -369,14 +370,14 @@ def run_ncbi():
     #with open('complete/ncbi/ncbi_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
 
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
-    
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
+        
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/ncbi/system/ncbi_test')
 
@@ -407,12 +408,12 @@ def run_bc7med():
     val_x, val_y = data.get_train_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/bc7med/bc7med_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/bc7med/bc7med_model_weights')
     #classifier.load_weights('complete/bc7med/bc7med_model_weights')
 
     # load the test data
@@ -422,8 +423,6 @@ def run_bc7med():
 
     #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/bc7med/gold/bc7med_test', max_length=None)
-
-    return
     
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -432,14 +431,14 @@ def run_bc7med():
     #with open('complete/bc7med/bc7med_test_predictions', 'rb') as file:
     #    predictions = pickle.load(file)
 
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
-
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
+        
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/bc7med/system/bc7med_test')
 
@@ -469,12 +468,12 @@ def run_cometa():
     val_x, val_y = data.get_train_data()
 
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('complete/cometa/cometa_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/cometa/cometa_model_weights')
     #classifier.load_weights('complete/cometa/cometa_model_weights')
 
     # load the test data
@@ -483,9 +482,7 @@ def run_cometa():
     test_x, test_y = data.get_train_data()
     
     #output the gold standard labels in brat format
-    classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/cometa/gold/cometa_test', max_length=None)
-
-    return
+    #classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/cometa/gold/cometa_test', max_length=None)
     
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
@@ -494,26 +491,26 @@ def run_cometa():
     #with open('complete/cometa/cometa_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
 
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
-
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
+        
     # output predictions to brat format
-    classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/cometa/ststem/cometa_test')
+    classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/cometa/system/cometa_test')
 
     # output performance
     classifier.evaluate_predictions(converted_predictions, test_y, class_names)
 
-def run_ade_miner():
+def run_ademiner():
     data_filepath = '/home/sam/data/training_exp_data/ademiner/converted_all.tsv'
     # No Test or Validation data is provided TODO - how to compare? 10, 20, 50% split?
     test_set_size = 0.2 # percent of whole set
     validation_set_size = 0.1 # percent of training set
-    language_model_name = Classifier.Classifier.BIO_REDDIT_BERT
+    language_model_name = Classifier.Classifier.BIOREDDIT_BERT
     class_names = ['ade']
     num_classes = len(class_names)
     multi_class = num_classes > 1
@@ -532,40 +529,37 @@ def run_ade_miner():
         train_val_x, train_val_y, test_size=validation_set_size, shuffle=True)
     
     # train the model
-    #classifier.train(train_x, train_y,
-    #                 validation_data=(val_x, val_y),
-    #                 restore_best_weights=True,
-    #                 early_stopping_patience=5,
-    #                 early_stopping_monitor='val_micro_f1')
-    #classifier.save_weights('ademiner_model_weights')
-    #classifier.load_weights('ademiner_model_weights')
+    classifier.train(train_x, train_y,
+                     validation_data=(val_x, val_y),
+                     restore_best_weights=True,
+                     early_stopping_patience=5,
+                     early_stopping_monitor='val_micro_f1')
+    classifier.save_weights('complete/ademiner/ademiner_model_weights')
+    #classifier.load_weights('complete/ademiner/ademiner_model_weights')
 
     #output the gold standard labels in brat format
     classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/ademiner/gold/ademiner_test', max_length=None)
-    return
     
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
     with open('complete/ademiner/ade_miner_test_predictions.pkl', 'wb') as file:
         pickle.dump(predictions, file)
-    #with open('complete/ademinder/ade_miner_test_predictions.pkl', 'rb') as file:
+    #with open('complete/ademiner/ade_miner_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
 
-    # convert to a single binary prediction
-    converted_predictions = []
-    for token_prediction in predictions:
-        predicted_class = np.argmax(token_prediction)
-        prediction = np.zeros([num_classes])
-        prediction[predicted_class] = 1
-        converted_predictions.append(prediction)
+    # convert from probabilities to a one-hot encoding
+    predicted_class_indeces = np.argmax(predictions, axis=2)
+    converted_predictions = np.zeros(predictions.shape)
+    for sent in range(predictions.shape[0]):
+        for token in range(predictions.shape[1]):
+            predicted_class_index = predicted_class_indeces[sent, token]
+            converted_predictions[sent, token, predicted_class_index] = 1
 
     # output preditions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names,'complete/ademiner/system/ademiner_test')
 
     # output performance
     classifier.evaluate_predictions(converted_predictions, test_y, class_names)
-
-
 
     
 if __name__ == '__main__':

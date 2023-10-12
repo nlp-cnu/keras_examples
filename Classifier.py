@@ -412,7 +412,7 @@ class TokenClassifier(Classifier):
                             max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         self._num_classes = num_classes
         self._multi_class = multi_class
-
+        
         # create the language model
         language_model = self.load_language_model()
 
@@ -608,8 +608,15 @@ class TokenClassifier(Classifier):
                         #    unknown tokens are a single weird character. So far this has
                         #    worked, but may need to update it for special cases
                         this_text_length = 1
+
+                        # 1 special case with bc7med
+                        if kategail00 in x_line:
+                            this_text_length = '109'
+                        
                         span_end = previous_text_length + this_text_length
                         span_text = document_text[span_start:span_end]
+
+                        
                     else:
                         print("Warning span and token text do not match:")
                         print(f"    {x_line}")
