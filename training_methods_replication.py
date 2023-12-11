@@ -5,17 +5,17 @@ from Dataset import *
 
 def output_predictions_for_comparison():
     print ("i2b2")
-    run_i2b2_2010()
+    #run_i2b2_2010()
     print ("n2c2")
-    run_n2c2_2019()
+    #run_n2c2_2019()
     print ("cdr")
-    run_cdr()
+    #run_cdr()
     print ("bc7dcpi")
-    run_bc7dcpi()
+    #run_bc7dcpi()
     print ("nlmchem")
-    run_nlmchem()
+    #run_nlmchem()
     print ("ncbi")
-    run_ncbi()
+    #run_ncbi()
     print ("bc7med")
     run_bc7med()
     print ("cometa")
@@ -207,7 +207,7 @@ def run_bc7dcpi():
     validation_data_file_path = '/home/sam/data/training_exp_data/bc7dcpi/converted_val.tsv'
     test_data_file_path = '/home/sam/data/training_exp_data/bc7dcpi/converted_test.tsv'
     language_model_name = Classifier.Classifier.PUBMED_BERT
-    class_names = ['none', 'chemical', 'gene-y', 'gene-n', 'gene'] # TODO - I thought we were just doing gene?
+    class_names = ['none', 'chemical', 'gene'] 
     num_classes = len(class_names)
     multi_class = num_classes > 1
 

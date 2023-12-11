@@ -601,7 +601,7 @@ class TokenClassifier(Classifier):
                 span_start = previous_text_length
                 span_end = previous_text_length + this_text_length
                 span_text = document_text[span_start:span_end]
-
+    
                 if span_text.lower() != token_text.lower():
                     if token_text == '[UNK]':
                         # update this text length to be 1, because all(?) or at least most
@@ -609,10 +609,12 @@ class TokenClassifier(Classifier):
                         #    worked, but may need to update it for special cases
                         this_text_length = 1
 
-                        # 1 special case with bc7med
-                        if kategail00 in x_line:
-                            this_text_length = '109'
-                        
+                        span_end = previous_text_length + this_text_length
+                        span_text = document_text[span_start:span_end]
+
+                    # special case with bc7med (HAHAHAHAHAHAHA doesn't get tokenized correctly)
+                    if 'kategail00' in x_line:
+                        this_text_length = 109
                         span_end = previous_text_length + this_text_length
                         span_text = document_text[span_start:span_end]
 
@@ -828,6 +830,8 @@ class TokenClassifier(Classifier):
         recall = tp / (tp + fn)
         f1_score = (2 * precision * recall) / (precision + recall)
         support = tp + fn
+
+        print("precision = ", precision)
 
         # calculate micro and macro averages
         macro_precision = np.mean(precision)
