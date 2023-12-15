@@ -628,8 +628,12 @@ class TokenClassifier(Classifier):
                         exit()
 
                 # output for each true class
-                #   start at 1 to skip the None Class
-                for i in range(1,num_classes): 
+                #   start at 1 to skip the None Class (unless there is just one class
+                #   in that case, start is 0 - just the one class)
+                start = 1
+                if num_classes == 1:
+                    start = 0
+                for i in range(start, num_classes):
                     if labels[i] == 1:
                         span_start = previous_text_length
                         span_end = previous_text_length + this_text_length

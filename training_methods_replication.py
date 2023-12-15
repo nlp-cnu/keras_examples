@@ -482,7 +482,7 @@ def run_cometa():
     test_x, test_y = data.get_train_data()
     
     #output the gold standard labels in brat format
-    #classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/cometa/gold/cometa_test', max_length=None)
+    classifier.convert_predictions_to_brat_format(test_x, test_y, class_names, 'complete/cometa/gold/cometa_test', max_length=None)
     
     # get and save predictions on the test set
     predictions = classifier.predict(test_x)
