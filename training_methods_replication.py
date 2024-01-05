@@ -67,13 +67,16 @@ def run_i2b2_2010():
     #with open('complete/i2b2/i2b2_2010_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
      
-    # converted from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
+    # convert from probabilities to a one-hot encoding
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
         
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/i2b2/system/i2b2_2010_test')
@@ -126,12 +129,15 @@ def run_n2c2_2019():
     #    predictions = pickle.load(file)
 
     # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
    
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/n2c2/system/n2c2_2019_test')
@@ -187,13 +193,15 @@ def run_cdr():
     #    predictions = pickle.load(file)
 
     # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
-
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
         
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/cdr/system/cdr_test')
@@ -249,12 +257,15 @@ def run_bc7dcpi():
     #    predictions = pickle.load(file)
 
     # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
 
         
     # output predictions to brat format
@@ -308,15 +319,18 @@ def run_nlmchem():
         pickle.dump(predictions, file)
     #with open('complete/nlmchem/nlmchem_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
-    
+
     # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
-        
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
+            
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/nlmchem/system/nlmchem_test')
 
@@ -370,14 +384,17 @@ def run_ncbi():
     #with open('complete/ncbi/ncbi_test_predictions.pkl', 'rb') as file:
     #    predictions = pickle.load(file)
 
-    # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
-        
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
+
+            
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/ncbi/system/ncbi_test')
 
@@ -432,12 +449,15 @@ def run_bc7med():
     #    predictions = pickle.load(file)
 
     # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
         
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/bc7med/system/bc7med_test')
@@ -492,12 +512,15 @@ def run_cometa():
     #    predictions = pickle.load(file)
 
     # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
         
     # output predictions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names, 'complete/cometa/system/cometa_test')
@@ -548,12 +571,15 @@ def run_ademiner():
     #    predictions = pickle.load(file)
 
     # convert from probabilities to a one-hot encoding
-    predicted_class_indeces = np.argmax(predictions, axis=2)
-    converted_predictions = np.zeros(predictions.shape)
-    for sent in range(predictions.shape[0]):
-        for token in range(predictions.shape[1]):
-            predicted_class_index = predicted_class_indeces[sent, token]
-            converted_predictions[sent, token, predicted_class_index] = 1
+    if num_classes > 1:
+        predicted_class_indeces = np.argmax(predictions, axis=2)
+        converted_predictions = np.zeros(predictions.shape)
+        for sent in range(predictions.shape[0]):
+            for token in range(predictions.shape[1]):
+                predicted_class_index = predicted_class_indeces[sent, token]
+                converted_predictions[sent, token, predicted_class_index] = 1
+    else:
+        converted_predictions = np.round(predictions)
 
     # output preditions to brat format
     classifier.convert_predictions_to_brat_format(test_x, converted_predictions, class_names,'complete/ademiner/system/ademiner_test')

@@ -616,9 +616,7 @@ class TokenClassifier(Classifier):
                     if 'kategail00' in x_line:
                         this_text_length = 109
                         span_end = previous_text_length + this_text_length
-                        span_text = document_text[span_start:span_end]
-
-                        
+                        span_text = document_text[span_start:span_end]        
                     else:
                         print("Warning span and token text do not match:")
                         print(f"    {x_line}")
