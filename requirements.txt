@@ -1,0 +1,7 @@
+numpy
+keras==2.15.0
+transformers
+tensorflow==2.15.0
+scikit-learn
+pandas
+torch
